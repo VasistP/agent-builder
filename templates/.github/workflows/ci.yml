@@ -1,0 +1,25 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  deterministic:
+    runs-on: ubuntu-latest
+    # No model API keys in this job — deterministic tests must not call a model.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv sync --extra dev --extra dashboard --extra evals
+      - name: Lint + docstrings + types
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run mypy
+      - name: FUNCTIONS.md is current
+        run: uv run python tools/functions_index.py --check
+      - name: Unit + regression (zero tokens)
+        run: uv run pytest tests/unit tests/regression --cov
+      - name: Integration (data-store containers, no model calls)
+        run: uv run pytest tests/integration -m integration

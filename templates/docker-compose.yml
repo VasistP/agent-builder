@@ -1,0 +1,23 @@
+# Scaffolded by agent-builder. Data-store services are added per the discovery spec.
+# Profiles keep things opt-in: `docker compose --profile observability up -d`.
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["evals", "observability"]
+    ports: ["11434:11434"]
+    volumes: ["ollama:/root/.ollama"]
+
+  # --- From-scratch observability dashboard (used when no external tool is chosen) ---
+  dashboard:
+    build: { context: ., dockerfile: dashboard/Dockerfile }
+    profiles: ["observability"]
+    ports: ["8501:8501"]
+    volumes: ["./logs:/app/logs:ro", "./evals/results:/app/evals/results:ro"]
+    command: ["streamlit", "run", "dashboard/app.py", "--server.address=0.0.0.0"]
+
+  # --- Optional: Langfuse / Phoenix / OTel collector are added by skills/2-observability
+  #     if the user picks an external OSS tool. Kept out of the default file. ---
+
+volumes:
+  ollama:

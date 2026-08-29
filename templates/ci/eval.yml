@@ -1,0 +1,36 @@
+# Eval gate — runs on changes to agent code. Kept separate from ci.yml because it
+# needs a judge model. Default judge is local Ollama (no secret, no cost).
+name: eval
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "evals/**"
+      - "pyproject.toml"
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    services:
+      ollama:
+        image: ollama/ollama:latest
+        ports: ["11434:11434"]
+    env:
+      EVAL_JUDGE_PROVIDER: ollama
+      EVAL_JUDGE_MODEL: llama3.1:8b
+      OLLAMA_HOST: http://localhost:11434
+      # Agent-under-test model key: provide via repo secret only if your eval
+      # cases require real model calls. This spends tokens on every run.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv sync --extra dev --extra evals
+      - run: curl -sf http://localhost:11434/api/pull -d '{"name":"llama3.1:8b"}'
+      - name: Run eval suite (fails on regression vs baseline)
+        run: uv run python -m evals.run_evals
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: evals/results/

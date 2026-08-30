@@ -69,6 +69,10 @@ Then ask:
 
 ## Judge setup
 
+**Use the `claude-api` skill for model ids, pricing and limits — never fill them
+from memory.** `evals/pricing.json` drives every cost number in the dashboard and
+every cost warning here; a stale entry silently misreports spend.
+
 - Default: **local Ollama** model (e.g. `llama3.1:8b` or `qwen2.5:7b`), fixed
   seed, temperature 0. Zero cost, offline.
   - **macOS: install natively** (`brew install ollama && brew services start

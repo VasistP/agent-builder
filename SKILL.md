@@ -133,12 +133,30 @@ and flag drift rather than trusting the doc blindly.
 8. Append to `docs/CHANGELOG.md` and `docs/TODO.md`. If the architecture changed,
    run `make arch-snapshot` before rewriting `docs/ARCHITECTURE.md`.
 
-## Recommended MCP servers
+## MCP servers — vetted and pinned, never ad hoc
 
-Wired into `templates/.mcp.json` by `skills/1-scaffold`; see
-`references/mcp-catalogue.md` for rationale:
+Wired into `templates/.mcp.json` by `skills/1-scaffold`, **version-pinned** with a
+vetting date each:
 
 - **context7** — current library/framework docs (avoid stale API guesses).
 - **playwright** — browser automation for web-interacting agents and dashboard E2E.
 - **memory** — persistent knowledge-graph memory for the dev agent across sessions.
 - **sequential-thinking** — structured multi-step reasoning for complex builds.
+
+**No server enters `.mcp.json` without passing the vetting checklist in
+`references/mcp-catalogue.md`; adding an unvetted one is a Tier B override.**
+Tool poisoning — hostile instructions in a tool's description, which the model
+reads and the human never sees — is the leading attack on enterprise agents, and
+66% of scanned servers carry security findings. Never use a bare `npx -y pkg`.
+A database MCP is added only after discovery, with a read-only role.
+
+## Compose with existing skills — don't reimplement them
+
+| Skill | Use it in |
+|-------|-----------|
+| `dataviz` | `skills/2-observability` — before writing any dashboard chart code |
+| `security-review` | `skills/7-security` — over the diff, alongside the S1–S11 rubric |
+| `code-review` | `skills/6-feature` — at the pre-merge checkpoint |
+| `claude-api` | `skills/3-evalset` — authority for model ids and `evals/pricing.json` |
+| `mcp-builder` | when an internal system needs a narrow, purpose-built MCP server |
+| `skill-creator` | after the POC, to turn team conventions into reusable skills |

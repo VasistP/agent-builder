@@ -100,6 +100,21 @@ Check for the trifecta first; if present, break one leg of it.
   `spec.md`.
 - **Fix:** add identity attributes to spans; verify retention.
 
+## S11. MCP servers and their tool metadata are vetted and pinned
+- **Why:** **tool poisoning** — malicious instructions hidden in a tool's
+  description or schema — is the highest-leverage attack on enterprise agents in
+  2026, because that metadata is read by the model with more authority than
+  retrieved data and is never seen by the human. An audit found **66% of scanned
+  MCP servers had security findings**, and in February 2026 a trojanized server
+  in a *legitimate registry* exfiltrated API keys and SSH keys.
+- **Verify:** every entry in `.mcp.json` is version-pinned (never bare
+  `npx -y pkg`), carries a vetting date, and passed the checklist in
+  `references/mcp-catalogue.md`. Tool descriptions have actually been read.
+  Credentials are scoped per server; no shared admin tokens. No general-purpose
+  database MCP holds write access.
+- **Fix:** pin every version, re-vet on bump, scope credentials down, and replace
+  broad third-party servers with a narrow purpose-built one (`mcp-builder`).
+
 ---
 
 ## Audit output
@@ -118,3 +133,6 @@ lethal-trifecta verdict first — it frames everything else.
   (separating reasoning from execution authority).
 - arXiv 2606.26479 — *Adaptive Evaluation of Out-of-Band Defenses Against Prompt
   Injection in LLM Agents*.
+- Checkmarx — *MCP Security: Risks, Real Incidents & Controls (2026)*.
+- Cloud Security Alliance Labs — *MCP Tool Poisoning and IDE Auto-Execution* (2026).
+- Microsoft Security — *The state of MCP security in 2026*.

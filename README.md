@@ -30,7 +30,8 @@ agent logic is written**, and a research-grounded rubric for both.
 | `references/observability-standards.md` | research-grounded observability rubric + portable JSON trace schema |
 | `references/eval-authoring-guide.md` | how to co-author cases with the user; JSONL schemas; grader catalogue |
 | `references/deterministic-testing.md` | what deterministic tests may/may not cover (no faked model calls) |
-| `references/stack-options.md`, `references/observability-options.md`, `references/mcp-catalogue.md` | decision guides |
+| `references/mcp-catalogue.md` | mandatory MCP vetting standard (tool poisoning, pinning) + the curated server set and companion skills |
+| `references/stack-options.md`, `references/observability-options.md` | decision guides |
 | `templates/` | the project skeleton `skills/1-scaffold` copies into the target repo |
 
 ## Non-negotiables

@@ -47,7 +47,10 @@ Order matters — see `references/methodology.md`. Both kinds of test are writte
    `"tier": 2, "source": "trace:<id>"`. Re-run `make eval`.
    **Never close a checkpoint on an unexplained eval failure with no new case
    recorded** — that is the step teams skip, and it's the one that compounds.
-10. **Checkpoint** — print:
+10. **Run the `code-review` skill** on the diff before presenting the checkpoint.
+    Surface anything it finds in "Open risks" rather than silently fixing it —
+    the human is reviewing your judgment, not just your output.
+11. **Checkpoint** — print:
 
 ```
 ### Checkpoint: feature — <name>
@@ -62,7 +65,7 @@ Open risks: <bullets or none>
 Reply `approved` to merge, or tell me what to change.
 ```
 
-11. **Bookkeeping — part of the change, not optional.**
+12. **Bookkeeping — part of the change, not optional.**
     - Append an entry to `docs/CHANGELOG.md` (what, why, files, tier, eval delta).
     - Append to `docs/TODO.md`: completed items, what is next. If the plan
       changed, append the supersession naming the superseded item and the reason
@@ -72,7 +75,7 @@ Reply `approved` to merge, or tell me what to change.
       `docs/ARCHITECTURE.md` to describe the new current state. Do not append
       history to it.
     - `make context-budget`; run `make context-rotate` if anything is over.
-12. On `approved`: commit (only if the user asked for commits), update
+13. On `approved`: commit (only if the user asked for commits), update
     `.agentbuilder/progress.md`, and update the baseline if the user wants the
     new result to be the reference.
 

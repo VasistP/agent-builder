@@ -37,6 +37,7 @@ row as part of the override.
 | `context.files_required` | AGENTS.md + ARCHITECTURE.md + CHANGELOG.md + TODO.md | `skills/1-scaffold` | Agents fall back to re-deriving context from source every session — the single largest avoidable token cost. |
 | `context.arch_snapshot_discipline` | snapshot; commit before rewrite | `tools/arch_snapshot.py` | Either the file becomes an append-only log (expensive to read, defeats its purpose) or versions are lost because no commit preserved them. |
 | `context.append_only` | CHANGELOG + TODO never rewritten | `AGENTS.md`, review | Loses the record of *why the plan changed* — the most expensive context to reconstruct and the easiest to lose. |
+| `mcp.vetting` | every server vetted + version-pinned | `skills/1-scaffold`, `.mcp.json` | Tool poisoning: hostile instructions in a tool description reach the model with high authority and are never seen by a human. 66% of scanned servers have security findings. Unpinned `npx -y` installs unreviewed code on every launch. |
 | `context.budgets` | 150/300/200/250 lines | `tools/context_budget.py`, CI | Context files grow until they become the token cost they exist to prevent. |
 | `repo.layout` | `templates/` structure | `skills/1-scaffold` | Tooling paths (Makefile, CI, index generator) assume it. Changing it is fine if you update those together. |
 | `dev.methodology` | TDD (deterministic) + tiered EDD (model) — `references/methodology.md` | `skills/3-evalset`, `skills/4-testing`, `skills/6-feature` | Changes the order of test/eval/implement within a feature and the Tier 1/Tier 2 eval split. |
@@ -57,7 +58,7 @@ row as part of the override.
 | `observability.capture_content` | `false` | Turning on captures prompts/responses — compliance implications; check `spec.md` for PII/regulatory constraints first. |
 | `observability.retention` | unbounded | Fine to set; unbounded is the riskier default for volume. |
 | `data.stores` | per discovery | Free choice. |
-| `mcp.servers` | context7, playwright, memory, sequential-thinking | All optional; removing them only affects dev ergonomics. |
+| `mcp.servers` | context7, playwright, memory, sequential-thinking | *Removing* one is Tier C — only dev ergonomics suffer. *Adding* one is gated by `mcp.vetting` (Tier B): each addition widens the supply chain. |
 | `models.tier_policy` | nano / standard / deep per `.agent/model-policy.yml` | Editing tier *rules* is Tier C. Removing routing entirely is Tier B — it is the control that stops expensive models doing mechanical work. |
 | `models.floors` | ARCHITECTURE.md=deep, evals=standard | Lowering a floor is Tier B: floors exist precisely because keyword matching under-rates these edits. |
 | `dashboard.panels` | O8 must-haves | Removing a must-have panel is Tier B, adding panels is Tier C. |
@@ -150,6 +151,16 @@ tools. Before discussing anything else, state the lethal-trifecta verdict.
 | Agent has tools with write or external permission | **STRONG DISADVANTAGE** — excessive agency is its own OWASP category |
 | Read-only agent, no external channel, curated internal data only | **DISADVANTAGE but discussable** — the untrusted-content boundary still costs almost nothing to keep |
 | Motivation is "approval gates are annoying in dev" | **Offer the narrower alternative**: keep the gate, wire an auto-approver in the dev environment only, and require the real approver in staging and production |
+
+### `mcp.vetting` → skip, or add an unvetted server
+
+| Signal | Verdict |
+|--------|---------|
+| Server is unpinned (`npx -y pkg` with no version) | **STRONG DISADVANTAGE** — this is the SmartLoader shape; latest is fetched and executed unreviewed on every launch |
+| Server would hold database write or admin credentials | **STRONG DISADVANTAGE** — the largest excess-agency risk available; use a read-only role |
+| Server is from an unnamed maintainer or unmaintained | **STRONG DISADVANTAGE** — registry presence proves nothing; the trojanized Oura server was in a legitimate registry |
+| Official vendor server, pinned, read-only scope, descriptions reviewed | **NEUTRAL** — that *is* passing the gate; just record the vetting date |
+| Motivation is "vetting is slow" | **Offer the narrower alternative**: vet once, pin, and re-vet only on version bump — that is a few minutes per server per quarter |
 
 ### `evals.multi_run` → 1 run per case
 

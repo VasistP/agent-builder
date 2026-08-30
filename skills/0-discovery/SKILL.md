@@ -69,7 +69,11 @@ it. See `references/security-standards.md`.
 - Mandated framework / language / cloud (many enterprises fix this)? If yes, what?
 - Latency budget (p50/p95).
 - Cost ceiling per request, if any.
-- Data residency / compliance (GDPR, HIPAA, SOC2, on-prem only…).
+- Data residency / compliance (GDPR, HIPAA, SOC2, on-prem only…). Record these
+  to inform design — whether to enable trace content capture, where data may
+  live, what the agent must refuse. This framework does **not** implement
+  compliance machinery; say so plainly rather than letting the user assume it
+  is covered.
 - Which model provider(s) are approved? Is a local model required?
 
 ### 5. Success criteria

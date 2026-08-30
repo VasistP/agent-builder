@@ -37,6 +37,24 @@ human checkpoint between every phase**.
 9. **API keys need explicit permission.** Judge defaults to local Ollama; warn
    that a hosted judge costs money per run.
 
+## Scope — and what this deliberately does not do
+
+This framework covers **building the agent, evaluating it, and observing it**.
+That includes the security and adversarial phases, because injection resistance
+is an evaluation problem and blast-radius control is an implementation one.
+
+It does **not** cover, and should not grow to cover:
+
+- regulatory compliance (EU AI Act classification, audit evidence, incident
+  reporting), data governance, retention or right-to-erasure
+- per-user data authorization / ACL-aware retrieval
+- production deployment, environment promotion, or secrets management
+
+These are real and often mandatory for enterprise agents — they belong to
+whoever owns compliance and platform, not here. When discovery surfaces one,
+**name it as out of scope and move on**; don't build it, and don't quietly leave
+the user thinking it's handled.
+
 ## Everything is locked — `skills/override` is the only key
 
 No skill may change any default in `references/override-registry.md`, including

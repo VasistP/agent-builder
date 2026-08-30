@@ -35,6 +35,18 @@ agent logic is written**, and a research-grounded rubric for both.
 | `references/stack-options.md`, `references/observability-options.md` | decision guides |
 | `templates/` | the project skeleton `skills/1-scaffold` copies into the target repo |
 
+## Scope
+
+Covers **building, evaluating and observing** an agent — including security
+hardening and adversarial testing, since injection resistance is an evaluation
+problem and blast-radius control an implementation one.
+
+Out of scope by design: regulatory compliance and data governance, per-user
+data authorization / ACL-aware retrieval, and production deployment or secrets
+management. Real concerns for enterprise agents, but they belong to compliance
+and platform owners. The framework names them and moves on rather than
+half-implementing them.
+
 ## Non-negotiables
 
 1. Evals and observability are always set up. Every default — including routine

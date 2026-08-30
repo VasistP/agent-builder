@@ -2,8 +2,9 @@
 name: agent-builder-1-scaffold
 description: >-
   Phase 1 of agent-builder. Create the project skeleton, dev tooling, docstring
-  enforcement, the FUNCTIONS.md index + fn_search CLI, and .mcp.json. Use after
-  the discovery spec is approved.
+  enforcement, the FUNCTIONS.md index and fn_search CLI, the agent context files,
+  and the on-demand integration catalogue. Use after the discovery spec is
+  approved.
 ---
 
 # Phase 1 — Scaffold

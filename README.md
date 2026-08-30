@@ -20,6 +20,7 @@ agent logic is written**, and a research-grounded rubric for both.
 |------|---------|
 | `SKILL.md` | orchestrator: modes, non-negotiables, checkpoint protocol |
 | `skills/0-discovery` … `skills/8-adversarial` | the phase sub-skills, each independently invocable (`build` / `add` / `audit`) |
+| `skills/capabilities` | what the framework can do and what you can invoke — see [CAPABILITIES.md](CAPABILITIES.md), generated from live repo state |
 | `skills/override` | the **only** way to change any default — assesses the specific repo, warns, offers alternatives, records a ledger |
 | `references/override-registry.md` | every overridable item, its tier, blast radius, and assessment heuristics |
 | `references/methodology.md` | TDD for deterministic code + tiered EDD for model behavior; the per-feature ordering |

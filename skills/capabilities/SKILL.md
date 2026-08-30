@@ -10,15 +10,33 @@ description: >-
 
 # agent-builder capabilities
 
-Answers "what can this do, and what can I invoke?" Run the generator — it reads
-live repo state, so it cannot drift:
+Documentation-as-a-skill: answers "what can this do, and what can I invoke?"
+Run the generator — it reads live repo state, so it cannot drift:
 
 ```bash
-python tools/capabilities.py
+python3 tools/capabilities.py          # print
+python3 tools/capabilities.py --write  # refresh CAPABILITIES.md
+python3 tools/capabilities.py --check  # exit 1 if stale
 ```
 
-`CAPABILITIES.md` holds the same content for anyone browsing on GitHub;
-`--write` refreshes it, `--check` fails if it is stale.
+**No dependencies.** It runs under bare `python3`, because the agent asking may
+not have this repo's venv — or may not be Claude at all.
+
+## Works without a skill mechanism
+
+Claude Code loads this file on request. Cursor, Gemini CLI, Copilot, Codex and
+others may have no skill mechanism, and nothing here depends on one:
+
+- **`CAPABILITIES.md`** is committed and readable by anything, including a human
+  browsing GitHub.
+- **`AGENTS.md`** at the repo root points every agent here; `CLAUDE.md`,
+  `GEMINI.md`, `.cursor/rules/` and `.github/copilot-instructions.md` are
+  one-line pointers to it.
+- Every skill is plain markdown — an agent that cannot *invoke* `skills/3-evalset`
+  can still *read* it and follow it.
+
+If you are that agent: read `CAPABILITIES.md`, then open the specific
+`skills/<name>/SKILL.md` you need. That is the whole mechanism.
 
 ## How to answer
 

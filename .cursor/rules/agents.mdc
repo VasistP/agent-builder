@@ -1,0 +1,10 @@
+---
+description: Project agent instructions
+alwaysApply: true
+---
+
+This project keeps a single, vendor-neutral set of agent instructions.
+
+Read `AGENTS.md` at the repo root — it is the source of truth. Start with
+`CAPABILITIES.md` for what the framework offers. Do not add instructions here;
+they will drift.

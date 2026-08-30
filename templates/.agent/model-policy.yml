@@ -1,0 +1,96 @@
+# Model routing policy — vendor-neutral.
+#
+# Purpose: stop expensive, high-reasoning models being spent on mechanical work
+# (locating code, explaining it, regenerating indexes). That waste is the single
+# most common way an agent project burns its budget.
+#
+# Read by:
+#   - tools/route_task.py        (any tool, any human, CI)
+#   - .claude/hooks/model-guard.sh (Claude Code, advisory injection)
+#   - AGENTS.md                  (instructions every agent reads)
+#
+# Nothing in a repo can force another vendor's tool to switch models. This policy
+# is enforced where it can be (scripts, hooks, CI) and advisory elsewhere.
+
+version: 1
+
+# Fill in the providers you actually use. Anthropic ids are current as of the
+# scaffold date; verify others against your provider's docs before relying on them.
+providers:
+  anthropic:
+    nano: claude-haiku-4-5-20251001
+    standard: claude-sonnet-5
+    deep: claude-opus-5
+  # openai:
+  #   nano: <small model>
+  #   standard: <mid model>
+  #   deep: <frontier model>
+  # local:
+  #   nano: qwen2.5:7b
+  #   standard: qwen2.5:32b
+  #   deep: <not recommended locally>
+
+default_provider: anthropic
+
+# Tier assigned when no rule matches. Deliberately the middle tier: guessing
+# "nano" risks a bad job, guessing "deep" risks the exact waste this prevents.
+default_tier: standard
+
+tiers:
+  nano:
+    reasoning: minimal
+    description: >-
+      Mechanical work with no design judgment. If a competent junior could do it
+      by following instructions, it is nano.
+    match:
+      - "\\b(find|locate|search|where is|which file|grep)\\b"
+      - "\\b(explain|describe|summari[sz]e|walk me through|what does)\\b"
+      - "\\b(format|reformat|lint|autofix|style)\\b"
+      - "\\b(regenerate|rebuild|refresh)\\b.*\\b(index|docs?|FUNCTIONS)\\b"
+      - "\\b(changelog|todo)\\b.*\\b(entry|update|append)\\b"
+      - "\\b(rename|typo|comment|docstring)\\b"
+      - "\\b(diagram|chart|visuali[sz]e)\\b"
+      - "\\brun\\b.*\\b(tests?|lint|make)\\b"
+
+  standard:
+    reasoning: moderate
+    description: >-
+      Implement one nano-sized task, write tests, routine debugging, docs.
+    match:
+      - "\\b(implement|add|write|build|create)\\b"
+      - "\\b(test|unit test|eval case)\\b"
+      - "\\b(fix|debug|repair)\\b"
+      - "\\b(refactor|extract|split)\\b"
+
+  deep:
+    reasoning: high
+    description: >-
+      Design decisions and problems the cheaper tiers already failed on. Spend
+      this tier on the DECISION, then hand the implementation back to nano.
+    match:
+      - "\\b(architect|architecture|redesign|re-?design)\\b"
+      - "\\b(migrat|re-?platform|rewrite)\\w*\\b"
+      - "\\b(trade-?off|evaluate (options|approaches)|which approach)\\b"
+      - "\\b(security|threat model|vulnerabilit)\\w*\\b"
+      - "\\b(root cause|hard bug|intermittent|race condition|deadlock)\\b"
+      - "\\b(eval (failure|regression) triage|why did evals)\\b"
+      - "\\bescalat\\w*\\b"
+
+# Escalation is allowed but must be deliberate and recorded.
+escalation:
+  require_reason: true
+  # Try the cheaper tier first for these; escalate only after a genuine failure.
+  attempt_cheaper_first: [standard]
+  record_in: docs/CHANGELOG.md   # note the tier used in the entry
+
+# Work that must never run below its floor, regardless of keyword match.
+floors:
+  - path_glob: "docs/ARCHITECTURE.md"
+    min_tier: deep
+    reason: architecture changes are design decisions
+  - path_glob: ".agent/model-policy.yml"
+    min_tier: deep
+    reason: changing the policy itself needs judgment
+  - path_glob: "evals/**"
+    min_tier: standard
+    reason: eval cases encode ground truth; a wrong case is worse than none

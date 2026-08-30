@@ -19,6 +19,8 @@ jobs:
           uv run mypy
       - name: FUNCTIONS.md is current
         run: uv run python tools/functions_index.py --check
+      - name: Agent context files within budget
+        run: uv run python tools/context_budget.py --check
       - name: Unit + regression (zero tokens)
         run: uv run pytest tests/unit tests/regression --cov
       - name: Integration (data-store containers, no model calls)

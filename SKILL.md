@@ -29,7 +29,13 @@ agent logic is written, then drives feature work through an eval-gated loop with
    **Methodology:** strict TDD for deterministic code, tiered EDD for model
    behavior — see `references/methodology.md`. Both kinds of test are written
    before the implementation they cover.
-5. **API keys need explicit permission.** The eval judge defaults to a local
+5. **Context files are mandatory.** Every scaffolded repo gets `AGENTS.md`
+   (vendor-neutral, with thin `CLAUDE.md`/`GEMINI.md`/Cursor/Copilot pointers),
+   `docs/ARCHITECTURE.md` (snapshot — overwritten, never appended),
+   `docs/CHANGELOG.md` and `docs/TODO.md` (append-only, rotated), plus model-tier
+   routing. These exist to stop agents burning the token budget re-deriving
+   context every session. See `references/context-and-cost.md`.
+6. **API keys need explicit permission.** The eval judge defaults to a local
    Ollama model. Only use a hosted model after asking; if the user picks a large
    paid model, warn that every eval run costs money.
 
@@ -101,12 +107,19 @@ and flag drift rather than trusting the doc blindly.
 
 ## How an agent should navigate a project built by this skill
 
-1. Run `python tools/fn_search.py "<intent>"` (or read `FUNCTIONS.md`) to locate
+1. Read `AGENTS.md`, then `docs/ARCHITECTURE.md`, then the tails of
+   `docs/TODO.md` and `docs/CHANGELOG.md`. Do not re-derive any of this from the
+   codebase — that is the expensive habit these files exist to replace.
+2. Run `python tools/fn_search.py "<intent>"` (or read `FUNCTIONS.md`) to locate
    the function(s) to change — do this **before** reading source files.
-2. Make the change; keep the Google-style docstring accurate.
-3. Run `make functions-index` to refresh `FUNCTIONS.md` (CI fails on drift).
-4. Add/extend deterministic tests for any non-LLM logic touched.
-5. Run `make eval`; report the score delta.
+3. Check the tier: `python tools/route_task.py "<intent>"`. Use the cheapest tier
+   that can do the job; decompose rather than escalate.
+4. Make the change; keep the Google-style docstring accurate.
+5. Run `make functions-index` to refresh `FUNCTIONS.md` (CI fails on drift).
+6. Add/extend deterministic tests for any non-LLM logic touched.
+7. Run `make eval`; report the score delta.
+8. Append to `docs/CHANGELOG.md` and `docs/TODO.md`. If the architecture changed,
+   run `make arch-snapshot` before rewriting `docs/ARCHITECTURE.md`.
 
 ## Recommended MCP servers
 

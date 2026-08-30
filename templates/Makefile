@@ -3,7 +3,8 @@ PKG := agent_pkg
 .DEFAULT_GOAL := help
 
 .PHONY: help setup lint test test-unit test-regression test-integration \
-        eval obs-up obs-down functions-index smoke
+        eval obs-up obs-down functions-index smoke context-budget context-rotate \
+        arch-snapshot arch-snapshot-commit arch-history route
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-20s %s\n", $$1, $$2}'
@@ -14,10 +15,11 @@ setup: ## Install deps (uv) and pre-commit hook
 	@printf '#!/bin/sh\nmake lint test-unit || exit 1\n' > .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
 
-lint: ## Ruff (incl. mandatory docstrings) + mypy
+lint: ## Ruff (incl. mandatory docstrings) + mypy + context budgets
 	uv run ruff check .
 	uv run ruff format --check .
 	uv run mypy
+	uv run python tools/context_budget.py --check
 
 test: test-unit test-regression test-integration ## All deterministic suites (no tokens)
 
@@ -29,6 +31,24 @@ test-regression: ## Golden-file transform tests
 
 test-integration: ## Deterministic wiring vs real data-store containers (no model calls)
 	uv run pytest tests/integration -m integration
+
+context-budget: ## Check agent context files are within their line budgets
+	uv run python tools/context_budget.py --check
+
+context-rotate: ## Archive overflow CHANGELOG/TODO entries into docs/archive/
+	uv run python tools/context_budget.py --rotate
+
+arch-snapshot: ## Verify ARCHITECTURE.md is committed before you rewrite it
+	uv run python tools/arch_snapshot.py --check
+
+arch-snapshot-commit: ## Commit pending ARCHITECTURE.md changes (never pushes)
+	uv run python tools/arch_snapshot.py --commit
+
+arch-history: ## List past versions of ARCHITECTURE.md
+	uv run python tools/arch_snapshot.py --history
+
+route: ## Which model tier should a task use?  make route T="find the parser"
+	@uv run python tools/route_task.py "$(T)"
 
 functions-index: ## Regenerate FUNCTIONS.md from src/ docstrings
 	uv run python tools/functions_index.py --write

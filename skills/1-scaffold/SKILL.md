@@ -64,12 +64,28 @@ Rename `<pkg>` to the spec's package name.
   `path:line — signature — summary`. Document it in the project README as step 1
   for any change.
 
-### 5. MCP config
+### 5. Agent context files (mandatory)
+Copy and fill in, per `references/context-and-cost.md`:
+- `AGENTS.md` — canonical, vendor-neutral. Fill in project specifics; keep it
+  under 150 lines.
+- `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/agents.mdc`,
+  `.github/copilot-instructions.md` — one-line pointers. Never duplicate content.
+- `docs/ARCHITECTURE.md` — snapshot template; fill from the spec.
+- `docs/CHANGELOG.md`, `docs/TODO.md` — seeded, append-only.
+- `.agent/model-policy.yml` — set the provider(s) actually in use.
+- `.claude/hooks/model-guard.sh` + `.claude/settings.json` — Claude Code routing
+  hook. Tell the user it is advisory-by-injection, and that other tools read the
+  same policy via `tools/route_task.py`.
+
+Verify: `make context-budget` passes and `make route T="find the parser"`
+returns `nano`.
+
+### 6. MCP config
 Copy `templates/.mcp.json` (context7, playwright, memory, sequential-thinking),
 each with a comment. Tell the user which need install/auth and that they're
 optional but recommended (`references/mcp-catalogue.md`).
 
-### 6. Verify
+### 7. Verify
 Run `make setup` then `make test`. The skeleton ships one trivial passing
 deterministic test so the harness is proven green.
 

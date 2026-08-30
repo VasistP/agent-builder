@@ -23,6 +23,7 @@ agent logic is written**, and a research-grounded rubric for both.
 | `skills/override` | the **only** way to change any default — assesses the specific repo, warns, offers alternatives, records a ledger |
 | `references/override-registry.md` | every overridable item, its tier, blast radius, and assessment heuristics |
 | `references/methodology.md` | TDD for deterministic code + tiered EDD for model behavior; the per-feature ordering |
+| `references/context-and-cost.md` | the context files (AGENTS.md, ARCHITECTURE/CHANGELOG/TODO) and model-tier routing that stop agents burning tokens re-deriving context |
 | `references/eval-standards.md` | research-grounded eval rubric (build + audit) |
 | `references/observability-standards.md` | research-grounded observability rubric + portable JSON trace schema |
 | `references/eval-authoring-guide.md` | how to co-author cases with the user; JSONL schemas; grader catalogue |
@@ -44,6 +45,10 @@ agent logic is written**, and a research-grounded rubric for both.
 4. Human checkpoint between every phase.
 5. Eval judge defaults to a local Ollama model; hosted judges need explicit
    permission and a cost warning.
+6. Every repo gets vendor-neutral `AGENTS.md` + a current-state
+   `docs/ARCHITECTURE.md` + append-only `CHANGELOG`/`TODO`, all under enforced
+   line budgets, plus model-tier routing — so agents stop re-deriving context
+   from source every session.
 
 ## The template in `templates/`
 

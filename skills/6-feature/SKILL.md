@@ -16,8 +16,14 @@ a human checkpoint and an eval run.
 Order matters — see `references/methodology.md`. Both kinds of test are written
 **before** the implementation.
 
+0. **Orient cheaply.** Read `AGENTS.md`, `docs/ARCHITECTURE.md`, and the tails of
+   `docs/TODO.md` / `docs/CHANGELOG.md`. Do not re-read the codebase to rebuild
+   context those files should already hold.
 1. **Pick one feature** from `.agentbuilder/spec.md` → Feature backlog. Restate
-   its acceptance criteria with the user.
+   its acceptance criteria with the user, then **decompose it into nano-sized
+   tasks** — each completable by the cheapest tier in one focused pass. Check
+   with `python tools/route_task.py`. If a piece cannot be handed to the nano
+   tier, it is not small enough yet; split it rather than escalating.
 2. **Locate the code** — `python tools/fn_search.py "<intent>"` and/or read
    `FUNCTIONS.md`. Identify the functions to change/add *before* opening source
    files. Use context7 for any library API you're unsure about.
@@ -56,7 +62,17 @@ Open risks: <bullets or none>
 Reply `approved` to merge, or tell me what to change.
 ```
 
-11. On `approved`: commit (only if the user asked for commits), update
+11. **Bookkeeping — part of the change, not optional.**
+    - Append an entry to `docs/CHANGELOG.md` (what, why, files, tier, eval delta).
+    - Append to `docs/TODO.md`: completed items, what is next. If the plan
+      changed, append the supersession naming the superseded item and the reason
+      — never rewrite the old entry.
+    - If the architecture changed materially: `make arch-snapshot` (commits the
+      current version so it keeps its own commit), then rewrite
+      `docs/ARCHITECTURE.md` to describe the new current state. Do not append
+      history to it.
+    - `make context-budget`; run `make context-rotate` if anything is over.
+12. On `approved`: commit (only if the user asked for commits), update
     `.agentbuilder/progress.md`, and update the baseline if the user wants the
     new result to be the reference.
 

@@ -30,6 +30,10 @@ row as part of the override.
 | `testing.no_network_guard` | on | `tests/conftest.py` | Deterministic tests can silently start making paid model calls in CI. |
 | `docs.docstring_enforcement` | ruff `D`, Google | `pyproject.toml` | `FUNCTIONS.md` and `fn_search` degrade, so every future edit costs more tokens to locate. Compounds slowly. |
 | `docs.index_drift_check` | on | `.github/workflows/ci.yml` | The index silently goes stale, which is worse than not having one — agents trust it and edit the wrong function. |
+| `context.files_required` | AGENTS.md + ARCHITECTURE.md + CHANGELOG.md + TODO.md | `skills/1-scaffold` | Agents fall back to re-deriving context from source every session — the single largest avoidable token cost. |
+| `context.arch_snapshot_discipline` | snapshot; commit before rewrite | `tools/arch_snapshot.py` | Either the file becomes an append-only log (expensive to read, defeats its purpose) or versions are lost because no commit preserved them. |
+| `context.append_only` | CHANGELOG + TODO never rewritten | `AGENTS.md`, review | Loses the record of *why the plan changed* — the most expensive context to reconstruct and the easiest to lose. |
+| `context.budgets` | 150/300/200/250 lines | `tools/context_budget.py`, CI | Context files grow until they become the token cost they exist to prevent. |
 | `repo.layout` | `templates/` structure | `skills/1-scaffold` | Tooling paths (Makefile, CI, index generator) assume it. Changing it is fine if you update those together. |
 | `dev.methodology` | TDD (deterministic) + tiered EDD (model) — `references/methodology.md` | `skills/3-evalset`, `skills/4-testing`, `skills/6-feature` | Changes the order of test/eval/implement within a feature and the Tier 1/Tier 2 eval split. |
 | `evals.tier_split` | ~30% Tier 1 before code, rest harvested | `skills/3-evalset` | Pushing toward 100% Tier 1 spends the user's scarcest resource on imagined failure modes and anchors the suite; pushing toward 0% means nothing gates the first build. |
@@ -47,6 +51,8 @@ row as part of the override.
 | `observability.retention` | unbounded | Fine to set; unbounded is the riskier default for volume. |
 | `data.stores` | per discovery | Free choice. |
 | `mcp.servers` | context7, playwright, memory, sequential-thinking | All optional; removing them only affects dev ergonomics. |
+| `models.tier_policy` | nano / standard / deep per `.agent/model-policy.yml` | Editing tier *rules* is Tier C. Removing routing entirely is Tier B — it is the control that stops expensive models doing mechanical work. |
+| `models.floors` | ARCHITECTURE.md=deep, evals=standard | Lowering a floor is Tier B: floors exist precisely because keyword matching under-rates these edits. |
 | `dashboard.panels` | O8 must-haves | Removing a must-have panel is Tier B, adding panels is Tier C. |
 | `budgets.latency` / `budgets.cost` | per spec | Free choice; they're your own targets. |
 
@@ -108,6 +114,23 @@ the fast feedback without the false coverage. Offer that first.
 | Agent domain is well understood, failure modes genuinely predictable (e.g. strict schema extraction) | **NEUTRAL** — Tier 2 harvesting matters less when behavior is narrow |
 | Open-ended conversational or multi-tool agent | **DISADVANTAGE** — you cannot predict this failure surface; you'll author 40 cases and discover the real bugs are elsewhere |
 | User is time-constrained for interactive authoring | **STRONG DISADVANTAGE** — corpus-first front-loads the most expensive resource in the framework |
+
+### `context.*` → weaken or remove
+
+| Signal | Verdict |
+|--------|---------|
+| Team reports high token spend / hitting budget limits | **STRONG DISADVANTAGE** — these files are the direct mitigation for that exact problem |
+| Repo worked on by agents across many sessions | **STRONG DISADVANTAGE** — every cold start re-derives context without them |
+| Single-session throwaway prototype, one author | **NEUTRAL** — the payback period may exceed the project's life |
+| Motivation is "maintaining them is a chore" | **Offer the narrower alternative**: keep ARCHITECTURE.md + CHANGELOG, drop TODO; or lower the budgets so there is less to maintain. Do not drop AGENTS.md — it is what makes the rest discoverable |
+
+### `models.tier_policy` → remove
+
+| Signal | Verdict |
+|--------|---------|
+| Team uses one model for everything and is cost-constrained | **STRONG DISADVANTAGE** — routing is the cheapest available saving |
+| Team is on a flat-rate plan with no metering | **NEUTRAL** — the saving is latency, not money |
+| Policy is producing wrong tiers and annoying people | **Fix the rules, don't remove routing** — tier match patterns are Tier C and easy to tune |
 
 ### `stack.framework` → change
 

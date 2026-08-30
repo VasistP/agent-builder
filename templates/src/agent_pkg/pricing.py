@@ -11,9 +11,11 @@ _PRICING_FILE = Path(__file__).resolve().parent.parent.parent / "evals" / "prici
 
 @lru_cache
 def _table() -> dict[str, dict[str, float]]:
-    if _PRICING_FILE.exists():
-        return json.loads(_PRICING_FILE.read_text(encoding="utf-8"))
-    return {}
+    """Load and cache the per-million-token rate table from evals/pricing.json."""
+    if not _PRICING_FILE.exists():
+        return {}
+    data: dict[str, dict[str, float]] = json.loads(_PRICING_FILE.read_text(encoding="utf-8"))
+    return data
 
 
 def cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:

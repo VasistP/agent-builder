@@ -70,8 +70,15 @@ Then ask:
 ## Judge setup
 
 - Default: **local Ollama** model (e.g. `llama3.1:8b` or `qwen2.5:7b`), fixed
-  seed, temperature 0. Zero cost, offline. `make eval` starts Ollama via compose
-  if needed.
+  seed, temperature 0. Zero cost, offline.
+  - **macOS: install natively** (`brew install ollama && brew services start
+    ollama`). A containerised Ollama gets no GPU passthrough on macOS and runs
+    slowly enough that people start skipping evals. The compose `ollama` service
+    is behind the `evals` profile and is the right choice on Linux/CI.
+  - **Do not use a very small judge model** (≤1B). Verified in practice: a 0.5B
+    model passed an answer that fabricated a number with no supporting data —
+    exactly the failure the rubric was written to catch. This is what step E6
+    (judge alignment) exists to detect; run it before trusting any score.
 - If the user wants a hosted judge: **ask permission explicitly**. Recommend a
   small model (Claude Haiku). If they choose a large paid model, warn in writing:
   *"every `make eval` run will cost money — roughly $X per full run at N cases."*

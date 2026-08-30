@@ -19,12 +19,19 @@ _lock = threading.Lock()
 
 
 def _trace_dir() -> Path:
+    """Return the trace log directory from $TRACE_LOG_DIR, creating it if needed."""
     d = Path(os.getenv("TRACE_LOG_DIR", "logs/traces"))
     d.mkdir(parents=True, exist_ok=True)
     return d
 
 
 def _to_wire(rec: dict[str, Any]) -> dict[str, Any]:
+    """Convert an in-memory span record to the portable JSON schema.
+
+    Splits captured content out of `attributes` into a separate `content` block so
+    redaction and retention can be reasoned about independently of metadata.
+    """
+
     def iso(ts: float | None) -> str | None:
         """Format an epoch timestamp as RFC3339, or None."""
         return None if ts is None else _dt.datetime.fromtimestamp(ts, _dt.UTC).isoformat()

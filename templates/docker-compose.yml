@@ -2,13 +2,21 @@
 # Profiles keep things opt-in: `docker compose --profile observability up -d`.
 
 services:
+  # Eval judge. On macOS prefer a NATIVE install (`brew install ollama`) — a
+  # container gets no GPU passthrough there, so evals run CPU-only and slowly
+  # enough that people start skipping them. This service is the right choice on
+  # Linux and in CI. Opt in explicitly: `docker compose --profile evals up -d ollama`.
   ollama:
     image: ollama/ollama:latest
-    profiles: ["evals", "observability"]
+    profiles: ["evals"]
     ports: ["11434:11434"]
     volumes: ["ollama:/root/.ollama"]
 
   # --- From-scratch observability dashboard (used when no external tool is chosen) ---
+  # Reads the portable JSON traces via a bind mount. NOTE: the project must live
+  # under a path your Docker runtime shares into its VM — Colima/Lima mount $HOME
+  # but NOT /tmp, and Docker Desktop has a configurable file-sharing list. A
+  # project outside those paths yields an empty dashboard with no error.
   dashboard:
     build: { context: ., dockerfile: dashboard/Dockerfile }
     profiles: ["observability"]

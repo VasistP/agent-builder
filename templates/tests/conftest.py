@@ -16,6 +16,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     """Add --update-golden for regenerating regression golden files."""
     parser.addoption("--update-golden", action="store_true", default=False)
 
+
 _BLOCKED_HOSTS = ("api.anthropic.com", "api.openai.com", "generativelanguage.googleapis.com")
 
 

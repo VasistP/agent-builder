@@ -18,10 +18,8 @@ pytestmark = pytest.mark.integration
 
 def test_span_roundtrip(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("TRACE_LOG_DIR", str(tmp_path))
-    with span("agent run", operation="invoke_agent",
-              attributes={"gen_ai.conversation.id": "it-1"}):
-        with span("execute_tool", operation="execute_tool",
-                  attributes={"tool.name": "echo"}) as s:
+    with span("agent run", operation="invoke_agent", attributes={"gen_ai.conversation.id": "it-1"}):
+        with span("execute_tool", operation="execute_tool", attributes={"tool.name": "echo"}) as s:
             s["output"] = "ok"
 
     files = list(tmp_path.glob("*.jsonl"))

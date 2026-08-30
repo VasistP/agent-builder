@@ -57,17 +57,23 @@ tools = spans[spans["name"] == "execute_tool"]
 
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Agent runs", len(runs))
-c2.metric("p95 run latency (s)", round(runs["duration_s"].quantile(0.95), 2) if len(runs) else 0)
-c3.metric("Total cost (USD)", round(spans.get("attributes.cost.usd", pd.Series(dtype=float)).sum(), 4))
-c4.metric("Tool error rate", f"{(tools['status'].eq('error').mean() * 100 if len(tools) else 0):.1f}%")
+p95 = round(runs["duration_s"].quantile(0.95), 2) if len(runs) else 0
+total_cost = round(spans.get("attributes.cost.usd", pd.Series(dtype=float)).sum(), 4)
+tool_err = tools["status"].eq("error").mean() * 100 if len(tools) else 0
+c2.metric("p95 run latency (s)", p95)
+c3.metric("Total cost (USD)", total_cost)
+c4.metric("Tool error rate", f"{tool_err:.1f}%")
 
 st.subheader("Latency over time (agent runs)")
 st.line_chart(runs.set_index("start_time")["duration_s"])
 
 st.subheader("Tokens over time")
 tok = spans.set_index("start_time")[
-    [c for c in spans.columns if c in
-     ("attributes.gen_ai.usage.input_tokens", "attributes.gen_ai.usage.output_tokens")]
+    [
+        c
+        for c in spans.columns
+        if c in ("attributes.gen_ai.usage.input_tokens", "attributes.gen_ai.usage.output_tokens")
+    ]
 ]
 if not tok.empty:
     st.area_chart(tok)
@@ -78,7 +84,9 @@ if len(tools):
 
 st.subheader("Errors")
 errs = spans[spans["status"] == "error"]
-st.dataframe(errs[["start_time", "name", "error_type"]] if len(errs) else pd.DataFrame({"none": []}))
+st.dataframe(
+    errs[["start_time", "name", "error_type"]] if len(errs) else pd.DataFrame({"none": []})
+)
 
 st.subheader("Eval score trend")
 trend = load_eval_trend()

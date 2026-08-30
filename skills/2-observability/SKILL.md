@@ -67,6 +67,14 @@ simple, build from scratch. Never require an account or API key.
 Bring the chosen stack up/down via `docker compose`. From-scratch dashboard runs
 as a compose service reading `logs/traces/`.
 
+**Bind-mount gotcha — check this before debugging an empty dashboard.** The
+dashboard reads traces through a bind mount, so the project must live under a
+path the Docker runtime shares into its VM. Colima/Lima mount `$HOME` but **not**
+`/tmp`; Docker Desktop has a configurable file-sharing list. A project outside
+those paths produces an empty dashboard with **no error message**. Verify with
+`docker compose exec dashboard ls /app/logs/traces` before assuming the
+instrumentation is broken.
+
 ## Verify
 
 Run a smoke script (`python -m <pkg>.observability.smoke`) that emits a fake

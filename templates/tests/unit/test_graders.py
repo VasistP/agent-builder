@@ -9,8 +9,9 @@ def test_contains_all() -> None:
 
 
 def test_tool_called_counts() -> None:
-    r = run_grader({"type": "tool_called", "name": "sql", "times": 2}, "x",
-                   tool_calls=["sql", "sql"], steps=2)
+    r = run_grader(
+        {"type": "tool_called", "name": "sql", "times": 2}, "x", tool_calls=["sql", "sql"], steps=2
+    )
     assert r["passed"]
 
 

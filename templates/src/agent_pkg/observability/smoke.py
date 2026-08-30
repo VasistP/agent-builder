@@ -12,7 +12,11 @@ from agent_pkg.observability.tracing import span
 
 def main() -> int:
     """Write a synthetic three-span trace and print where it landed."""
-    with span("agent run", operation="invoke_agent", attributes={"gen_ai.conversation.id": "smoke-1"}):
+    with span(
+        "agent run",
+        operation="invoke_agent",
+        attributes={"gen_ai.conversation.id": "smoke-1"},
+    ):
         with span(
             "chat",
             operation="chat",

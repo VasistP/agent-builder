@@ -26,13 +26,17 @@ def render_prompt(state: AgentState) -> str:
 def step(state: AgentState) -> AgentState:
     """Advance the agent by one step: maybe call a tool, then get a reply."""
     state.steps += 1
-    with span("agent run", operation="invoke_agent",
-              attributes={"gen_ai.conversation.id": state.conversation_id}):
+    with span(
+        "agent run",
+        operation="invoke_agent",
+        attributes={"gen_ai.conversation.id": state.conversation_id},
+    ):
         last_user = next((m.content for m in reversed(state.messages) if m.role == "user"), "")
         tool = is_tool_request(last_user)
         if tool and state.steps <= state.max_steps:
-            with span("execute_tool", operation="execute_tool",
-                      attributes={"tool.name": tool.name}) as s:
+            with span(
+                "execute_tool", operation="execute_tool", attributes={"tool.name": tool.name}
+            ) as s:
                 result = dispatch(tool.name, tool.arguments)
                 s["output"] = result
             state.add("tool", result, tool_name=tool.name)

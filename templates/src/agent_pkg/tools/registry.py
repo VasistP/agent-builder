@@ -12,7 +12,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-_REGISTRY: dict[str, "ToolSpec"] = {}
+_REGISTRY: dict[str, ToolSpec] = {}
 
 
 @dataclass
@@ -33,7 +33,12 @@ class ToolRequest:
     arguments: dict[str, Any]
 
 
-def tool(name: str, description: str, parameters: dict[str, Any] | None = None) -> Callable:
+ToolFunc = Callable[..., str]
+
+
+def tool(
+    name: str, description: str, parameters: dict[str, Any] | None = None
+) -> Callable[[ToolFunc], ToolFunc]:
     """Decorator registering `func` as a callable tool.
 
     Args:
@@ -77,8 +82,11 @@ def is_tool_request(text: str) -> ToolRequest | None:
     return ToolRequest(name=match.group("name"), arguments={"text": match.group("rest").strip()})
 
 
-@tool("echo", "Echo the given text back. Placeholder tool for the skeleton.",
-      {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]})
+@tool(
+    "echo",
+    "Echo the given text back. Placeholder tool for the skeleton.",
+    {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]},
+)
 def _echo(text: str) -> str:
     """Return `text` unchanged."""
     return text

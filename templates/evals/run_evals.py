@@ -11,11 +11,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import time
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
+
+import httpx
 
 from evals.graders import run_grader
 from evals.judge import judge
@@ -29,12 +32,18 @@ JUDGE_GRADERS = {"llm_judge", "goal_met"}
 def _load_jsonl(path: Path) -> list[dict]:
     if not path.exists():
         return []
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    lines = path.read_text(encoding="utf-8").splitlines()
+    return [json.loads(line) for line in lines if line.strip()]
 
 
 def _git_sha() -> str:
+    """Return the short HEAD sha, or 'unknown' outside a repo / before any commit."""
     try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
     except Exception:  # noqa: BLE001
         return "unknown"
 
@@ -51,22 +60,53 @@ def _grade_one(expect: list[dict], output: str, ctx: dict) -> list[dict]:
                 ctx.get("trace_excerpt", ""),
             )
             results.append(
-                {"grader": spec["type"], "passed": verdict["verdict"] == "pass",
-                 "detail": verdict["reason"]}
+                {
+                    "grader": spec["type"],
+                    "passed": verdict["verdict"] == "pass",
+                    "detail": verdict["reason"],
+                }
             )
         else:
             results.append(run_grader(spec, output, **ctx))
     return results
 
 
+def _record(case: dict, kind: str, checks: list[dict]) -> dict:
+    """Build one result record from a case and its grader checks."""
+    return {
+        "id": case["id"],
+        "kind": kind,
+        "tags": case.get("tags", {}),
+        "tier": case.get("tier", 1),
+        "source": case.get("source", "spec"),
+        "passed": bool(checks) and all(c["passed"] for c in checks),
+        "checks": checks,
+    }
+
+
+def _errored(exc: Exception) -> list[dict]:
+    """Represent a case that raised before it could be graded as a failed check."""
+    return [
+        {"grader": "agent_invocation", "passed": False, "detail": f"{type(exc).__name__}: {exc}"}
+    ]
+
+
 def _run_single(cases: list[dict]) -> list[dict]:
-    """Execute every single-response case and grade it."""
+    """Execute every single-response case and grade it.
+
+    A case that raises is recorded as failed rather than aborting the run — one
+    broken case must not hide the results of every other case.
+    """
     from agent_pkg.agent.run import run_once
 
     out = []
     for case in cases:
         start = time.time()
-        resp = run_once(case["input"], conversation_id=case["id"])
+        try:
+            resp = run_once(case["input"], conversation_id=case["id"])
+        except Exception as exc:  # noqa: BLE001 - recorded as a failed case
+            out.append(_record(case, "single", _errored(exc)))
+            continue
         ctx = {
             "tool_calls": resp.tool_calls,
             "steps": resp.steps,
@@ -74,9 +114,7 @@ def _run_single(cases: list[dict]) -> list[dict]:
             "trace_excerpt": " -> ".join(resp.tool_calls),
         }
         checks = _grade_one(case.get("graders", []), resp.text, ctx)
-        out.append({"id": case["id"], "kind": "single", "tags": case.get("tags", {}),
-                    "tier": case.get("tier", 1), "source": case.get("source", "spec"),
-                    "passed": all(c["passed"] for c in checks), "checks": checks})
+        out.append(_record(case, "single", checks))
     return out
 
 
@@ -88,20 +126,30 @@ def _run_conversations(cases: list[dict]) -> list[dict]:
     for case in cases:
         turns = [t["user"] for t in case["turns"]]
         start = time.time()
-        responses = chat(turns, conversation_id=case["id"])
+        try:
+            responses = chat(turns, conversation_id=case["id"])
+        except Exception as exc:  # noqa: BLE001 - recorded as a failed case
+            out.append(_record(case, "conversation", _errored(exc)))
+            continue
         checks: list[dict] = []
         for turn, resp in zip(case["turns"], responses, strict=False):
-            ctx = {"tool_calls": resp.tool_calls, "steps": resp.steps,
-                   "latency_s": 0.0, "trace_excerpt": " -> ".join(resp.tool_calls)}
+            ctx = {
+                "tool_calls": resp.tool_calls,
+                "steps": resp.steps,
+                "latency_s": 0.0,
+                "trace_excerpt": " -> ".join(resp.tool_calls),
+            }
             checks += _grade_one(turn.get("expect", []), resp.text, ctx)
         final = responses[-1] if responses else None
         if final is not None:
-            ctx = {"tool_calls": final.tool_calls, "steps": final.steps,
-                   "latency_s": time.time() - start, "trace_excerpt": " -> ".join(final.tool_calls)}
+            ctx = {
+                "tool_calls": final.tool_calls,
+                "steps": final.steps,
+                "latency_s": time.time() - start,
+                "trace_excerpt": " -> ".join(final.tool_calls),
+            }
             checks += _grade_one(case.get("end_expect", []), final.text, ctx)
-        out.append({"id": case["id"], "kind": "conversation", "tags": case.get("tags", {}),
-                    "tier": case.get("tier", 1), "source": case.get("source", "spec"),
-                    "passed": all(c["passed"] for c in checks), "checks": checks})
+        out.append(_record(case, "conversation", checks))
     return out
 
 
@@ -127,6 +175,34 @@ def _tier_mix(records: list[dict]) -> dict:
     return {"tier_1": t1, "tier_2": total - t1, "tier_1_pct": round(t1 / total, 3)}
 
 
+def _preflight() -> str | None:
+    """Return a human-readable reason the suite cannot run, or None if it can.
+
+    Checked before invoking the agent so a missing key produces one clear message
+    rather than an identical failure recorded against every case.
+    """
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        return (
+            "ANTHROPIC_API_KEY is not set, so the agent cannot be invoked.\n"
+            "  Evals call the real model by design — set it in .env.\n"
+            "  (The judge is separate and runs locally via Ollama by default.)"
+        )
+    provider = os.getenv("EVAL_JUDGE_PROVIDER", "ollama").lower()
+    if provider == "ollama":
+        host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+        try:
+            httpx.get(f"{host}/api/version", timeout=2.0).raise_for_status()
+        except Exception:  # noqa: BLE001
+            return (
+                f"the local judge is not reachable at {host}.\n"
+                "  Start it with `ollama serve` (native) or "
+                "`docker compose --profile evals up -d ollama`."
+            )
+    elif provider == "anthropic" and not os.getenv("ANTHROPIC_API_KEY"):
+        return "EVAL_JUDGE_PROVIDER=anthropic but ANTHROPIC_API_KEY is not set."
+    return None
+
+
 def main() -> int:
     """Load both eval sets, run them, persist results, and print the summary."""
     parser = argparse.ArgumentParser()
@@ -140,6 +216,10 @@ def main() -> int:
     if not single and not convos:
         print("No eval cases yet. Run skills/3-evalset to create them.")
         return 0
+
+    if (problem := _preflight()) is not None:
+        print(f"\nCannot run evals: {problem}")
+        return 2
 
     records: list[dict] = []
     if args.only != "conversation":
@@ -163,18 +243,18 @@ def main() -> int:
     prev = sorted(RESULTS_DIR.glob("*.json"))
     prev_summary = json.loads(prev[-2].read_text())["summary"] if len(prev) > 1 else {}
 
-    print(f"\nEval results  (sha {payload['agent_sha']}, "
-          f"{len(records)} cases)  -> {out_path.name}")
+    print(f"\nEval results  (sha {payload['agent_sha']}, {len(records)} cases)  -> {out_path.name}")
     for tag, rate in sorted(summary.items()):
         delta = rate - prev_summary.get(tag, rate)
         arrow = f"  ({delta:+.3f})" if delta else ""
         print(f"  {tag:<28} {rate:6.1%}{arrow}")
 
-    print(f"\n  Tier mix: {mix['tier_1']} spec-derived / {mix['tier_2']} "
-          f"harvested from traces")
+    print(f"\n  Tier mix: {mix['tier_1']} spec-derived / {mix['tier_2']} harvested from traces")
     if mix["tier_1_pct"] > 0.5 and len(records) > 5:
-        print("  ! Suite is still majority Tier 1 — are real failures being "
-              "harvested? See references/methodology.md")
+        print(
+            "  ! Suite is still majority Tier 1 — are real failures being "
+            "harvested? See references/methodology.md"
+        )
 
     return 0 if summary.get("overall", 0) >= 0 else 1
 

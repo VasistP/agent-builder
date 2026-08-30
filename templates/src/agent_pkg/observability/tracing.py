@@ -18,12 +18,17 @@ from typing import Any
 from agent_pkg.observability.exporter import write_span
 from agent_pkg.observability.redaction import redact
 
-_current_trace: contextvars.ContextVar[str | None] = contextvars.ContextVar("trace_id", default=None)
+_current_trace: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "trace_id", default=None
+)
 _current_span: contextvars.ContextVar[str | None] = contextvars.ContextVar("span_id", default=None)
-_usage: contextvars.ContextVar[dict[str, int] | None] = contextvars.ContextVar("usage", default=None)
+_usage: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar(
+    "usage", default=None
+)
 
 
 def _capture_content() -> bool:
+    """Return True if prompt/response bodies may be persisted (observability O6)."""
     return os.getenv("OTEL_GENAI_CAPTURE_CONTENT", "false").lower() == "true"
 
 
@@ -85,12 +90,19 @@ def span(
 
 
 def record_llm_usage(input_tokens: int, output_tokens: int, model: str, cost_usd: float) -> None:
-    """Attach token usage + cost to the nearest enclosing LLM span record."""
-    _usage.set({"input": input_tokens, "output": output_tokens})
-    # The model shim reads this back when closing its span; see agent/model.py.
-    frame = _usage.get()
-    if frame is not None:
-        frame.update({"model": model, "cost_usd": cost_usd})  # type: ignore[dict-item]
+    """Record token usage + cost for the most recent LLM call.
+
+    The model shim reads this back via `pop_usage` when closing its span; see
+    agent/model.py.
+    """
+    _usage.set(
+        {
+            "input": input_tokens,
+            "output": output_tokens,
+            "model": model,
+            "cost_usd": cost_usd,
+        }
+    )
 
 
 def pop_usage() -> dict[str, Any] | None:

@@ -12,10 +12,11 @@ Goal: the smallest possible working agent that exercises the whole environment �
 one real end-to-end call, traced, with a baseline eval run recorded. No backlog
 features yet.
 
-**Interview first** — mandatory unless `interaction.interview_mode` is
-overridden. Ask about the single end-to-end path to prove and its success
-criterion. Small batches, then a consensus check the user accepts *before* you
-write or generate anything. → `references/interview-protocol.md`
+**Propose, don't interrogate.** This phase has defensible defaults, so state the
+single end-to-end path you'll prove and its success criterion up front, get an
+explicit yes on the path, if more than one is plausible, then build. No
+consensus-check ceremony — but no silent decisions either, and the phase
+checkpoint still applies. → `references/interview-protocol.md`
 
 ## Prerequisites
 

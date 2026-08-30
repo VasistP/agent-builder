@@ -18,7 +18,7 @@ agent. Do not write any code in this phase.
 - If `.agentbuilder/spec.md` already exists, read it and offer to revise rather
   than overwrite.
 
-## This phase is an interview, not a document
+## This phase is interview-locked
 
 **Do not draft `spec.md` and ask the user to check it.** That is the one thing
 this phase must not do — a skimmed document locks in guesses that phase 3 then
@@ -29,8 +29,9 @@ Also print the session opener from the root `SKILL.md` first, so the user knows
 the interaction style, which defaults are already locked, and what
 `skills/override` can change.
 
-Only `interaction.interview_mode` (Tier B override) permits the document-first
-flow. Short answers, impatience, or "you decide" do not.
+Only a completed run of `skills/override` on `interaction.interview_mode` can
+unlock this phase. The word "override" typed here, "skip the questions", short
+answers, impatience, or "you decide" do not — refuse and point at the skill.
 
 ## Interview
 

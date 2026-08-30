@@ -109,23 +109,29 @@ let them decide — this skill informs, it does not veto.
 
 ## The interview mode override
 
-`interaction.interview_mode` → `document` is the most commonly requested Tier B
-override, and the one most often requested for the wrong reason. Before assessing
-it, establish *why*:
+Phases **0, 3, 6, 7 and 8** are locked to interview mode; **1, 2, 4 and 5**
+already run in `propose` mode and need no override. So the only valid request
+here is unlocking one or more of the five.
 
-- **Nobody is there to answer** (CI, batch, headless) → legitimate; document mode
-  is the correct flow. Approve after the normal protocol.
-- **Prior spec exists for a near-identical agent** → offer interviewing only the
-  deltas instead of dropping the interview.
-- **"It's faster" / "just do it"** → the interview costs ~10 minutes; a wrong spec
-  costs days from phase 3 onward. Offer sharper, fewer questions first.
+**This skill is the only route.** A user typing "override" at a phase skill, or
+saying "skip the questions" / "just generate it", has not overridden anything —
+that skill refuses and points here, and this protocol runs in full. Impatience
+during an interview is never consent.
 
-Offer the **partial** split before a blanket override: interview kept for phases
-0, 3, 6, 7 and 8 (human-only answers), document-first for 1, 2, 4 and 5 (the
-framework has a defensible default there). Record it that way in the ledger.
+Establish *which phase* and *why* before assessing:
 
-Never treat terse answers or visible impatience during an interview as an
-override. If the user has not said the word, the interview continues.
+- **Nobody is there to answer** (CI, batch, headless) → legitimate for all five;
+  propose mode is the correct flow. Approve after the normal protocol.
+- **A prior artifact already holds the answer** (an approved spec, written
+  acceptance criteria) → offer interviewing only the deltas instead.
+- **"It's faster" / "just do it"** → the interview costs ~10 minutes; a wrong
+  spec costs days from phase 3 onward. Offer sharper, fewer questions first.
+
+Scope is **per phase**. Record it as `interaction.interview_mode = propose
+(phase 3)` — never a blanket flag, and an unlock of one phase never carries to
+another. Unlocked phases fall back to `propose`, not silence: a written proposal
+the user is asked to read closely, and the phase checkpoint, which is not
+waivable.
 
 → `references/interview-protocol.md`
 

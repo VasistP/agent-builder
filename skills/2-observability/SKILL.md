@@ -13,11 +13,12 @@ Goal: every agent run emits structured telemetry following the OpenTelemetry
 GenAI semantic conventions, is viewable on a dashboard, and is exportable as
 portable JSON so the tool can be swapped later.
 
-**Interview first** — mandatory unless `interaction.interview_mode` is
-overridden. Ask about the observability tool, whether to capture prompt/response
-content (PII), and retention. Small batches, then a consensus check the user
-accepts *before* you write or generate anything. →
-`references/interview-protocol.md`
+**Propose, don't interrogate.** This phase has defensible defaults, so state the
+observability tool for this agent type, content capture (default off — turning
+it on has PII implications) and retention up front, get an explicit yes on any
+of those three the spec doesn't already settle, then build. No consensus-check
+ceremony — but no silent decisions either, and the phase checkpoint still
+applies. → `references/interview-protocol.md`
 
 Read `references/observability-standards.md` first — it is the rubric.
 

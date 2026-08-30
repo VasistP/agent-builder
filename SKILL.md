@@ -37,26 +37,32 @@ human checkpoint between every phase**.
    noise band aren't signal; the gate is pass^k. → `references/eval-standards.md`
 9. **API keys need explicit permission.** Judge defaults to local Ollama; warn
    that a hosted judge costs money per run.
-10. **Interview first, document second.** Never write a spec/plan/eval set and
-   ask the user to review it. Ask questions in small batches, reach an explicit
-   consensus check, *then* write the file.
+10. **Interview-locked phases: 0, 3, 6, 7, 8.** Their inputs exist only in the
+   user's head. Never write a spec, eval case, acceptance criterion or threat
+   model and ask them to review it — ask, reach a consensus check, *then* write.
    → `references/interview-protocol.md`
 
-## Interaction mode — interview by default
+## Interaction mode — interview where it's load-bearing
 
-**Default: `interview`.** Every phase extracts its decisions by asking the user
-questions, 2–4 at a time, and closes with a consensus check the user must accept
-before anything is written to disk. Writing a markdown document first and asking
-"does this look right?" is **not permitted in this mode** — people skim documents
-and nuance is lost exactly where it costs the most.
+| Phases | Mode | Why |
+|--------|------|-----|
+| **0, 3, 6, 7, 8** | **`interview` — locked** | the answer exists only in the user's head: purpose, a case's ground truth, a feature's acceptance criteria, which tools truly have side effects, what counts as a breach here. Guess it and the guess becomes the ground truth everything downstream is measured against |
+| 1, 2, 4, 5 | `propose` | the framework already has a defensible default, so hand the user something concrete to correct rather than a blank to fill |
 
-The full rules, the consensus-check block, and the per-phase interview gates are
-in `references/interview-protocol.md`. Read it before running any phase.
+**In an interview-locked phase**: questions 2–4 at a time, never a list, push back
+on vague answers, and close with a consensus check the user accepts before
+anything is written to disk. Writing the document first and asking "does this look
+right?" is not permitted — people skim, and the nuance lost is exactly the
+expensive kind. → `references/interview-protocol.md`
 
-`document` mode (write a proposal, user reviews it) exists and is legitimate, but
-it is a **Tier B override**: `override interaction.interview_mode`. Impatience,
-terse answers, or "just do it" are not overrides — they mean ask fewer, better
-questions.
+**In a `propose` phase**: state the defaults you intend to apply and the one or
+two real choices, get an explicit yes, then build. Still no silent decisions —
+just no consensus-check ceremony.
+
+Turning an interview off — for one phase or all of them — requires **running
+`skills/override`**. Typing the word "override" at a phase skill does nothing;
+neither do impatience, terse answers, or "just do it". Those mean ask fewer,
+better questions.
 
 ## Session opener — print this first
 
@@ -112,15 +118,15 @@ Resume from `.agentbuilder/progress.md` if present.
 
 | # | Sub-skill | Checkpoint |
 |---|-----------|-----------|
-| 0 | `0-discovery` → `.agentbuilder/spec.md` | user confirms the spec |
+| 0 | `0-discovery` → `.agentbuilder/spec.md` (interview) | user confirms the spec |
 | 1 | `1-scaffold` → skeleton, tooling, context files, integration catalogue | `make setup && make test` green |
 | 2 | `2-observability` → spans, dashboard, JSON export | a trace from a smoke call |
-| 3 | `3-evalset` → Tier 1 eval sets, judge | `make eval` runs |
+| 3 | `3-evalset` → Tier 1 eval sets, judge (interview) | `make eval` runs |
 | 4 | `4-testing` → deterministic suites | green, zero tokens |
 | 5 | `5-agent-skeleton` → minimal agent loop | one traced call; baseline eval |
-| 6 | `6-feature` (repeat) → one feature per run | eval delta + approval |
-| 7 | `7-security` → boundaries, scoping, injection evals | trifecta verdict; a side-effecting tool demonstrably blocked |
-| 8 | `8-adversarial` → red-team corpus + live session | zero breaches, or accepted risks signed off |
+| 6 | `6-feature` (repeat) → one feature per run (interview) | eval delta + approval |
+| 7 | `7-security` → boundaries, scoping, injection evals (interview) | trifecta verdict; a side-effecting tool demonstrably blocked |
+| 8 | `8-adversarial` → red-team corpus + live session (interview) | zero breaches, or accepted risks signed off |
 
 Phases 7–8 are mandatory for any agent reading enterprise data with tool access.
 Phase 7 builds the defenses; phase 8 assumes they're wrong and tries to break

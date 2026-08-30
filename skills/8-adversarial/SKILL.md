@@ -14,11 +14,11 @@ Phase 7 builds the defenses. **This phase assumes they are wrong and tries to
 break them.** Keep that posture: the job is to find the hole, not to confirm the
 design.
 
-**Interview first** — mandatory unless `interaction.interview_mode` is
-overridden. Ask about the attacker model, what counts as a breach in this
-deployment, and which risks are accepted. Small batches, then a consensus check
-the user accepts *before* you write or generate anything. →
-`references/interview-protocol.md`
+**Interview required — this phase is locked to it.** Ask about the attacker
+model, what counts as a breach in this deployment, and which risks are accepted.
+Small batches, then a consensus check the user accepts *before* you write or
+generate anything. Only a completed run of `skills/override` lifts this; the
+word "override" typed here does not. → `references/interview-protocol.md`
 
 Read `references/adversarial-standards.md` for the attack taxonomy and what
 counts as a breach.

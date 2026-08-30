@@ -1,8 +1,14 @@
 # Interview protocol
 
-The default interaction style for every phase of `agent-builder`. It is
-**mandatory** unless the user has recorded an `interaction.interview_mode`
-override (Tier B — see `override-registry.md`).
+The interaction style for the phases whose inputs exist only in the user's head:
+**0 (discovery), 3 (evalset), 6 (feature), 7 (security), 8 (adversarial)**. In
+those five it is **mandatory**, and only a completed run of `skills/override` can
+lift it (Tier B — see `override-registry.md`).
+
+Phases **1, 2, 4 and 5** run in `propose` mode instead: the framework has a
+defensible default there, so state it, get an explicit yes, and build. Those
+phases don't need the ceremony — handing someone a blank where a sane default
+exists wastes the attention you need for the questions that matter.
 
 ## Why this exists
 
@@ -19,9 +25,10 @@ agreeing.
 
 ## The rule
 
-> Do not write a spec, plan, design, eval set, threat model, or backlog document
-> and then ask the user to review it. Ask the questions first, one small batch at
-> a time, reach explicit agreement, and only then write the file.
+> In an interview-locked phase, do not write a spec, plan, design, eval set,
+> threat model, or backlog document and then ask the user to review it. Ask the
+> questions first, one small batch at a time, reach explicit agreement, and only
+> then write the file.
 
 A document produced before the interview is a **proposal the user must approve**,
 which is exactly the dynamic that lets nuance slip. A document produced after the
@@ -104,9 +111,11 @@ instead.
 ```
 ### Good to know before we start
 
-**How this runs:** interview style. I'll ask you questions in small batches and
-read back what I understood before writing anything. Expect to be asked, not
-handed a document to skim.
+**How this runs:** interview style for the parts only you can answer — discovery,
+eval cases, each feature's acceptance criteria, security and red-teaming. I'll
+ask in small batches and read back what I understood before writing anything.
+For scaffolding, observability, tests and the first skeleton I'll propose sane
+defaults and just get a yes from you.
 
 **Defaults already set for you** (all locked):
 - Evals + observability are built in, always — with a CI gate and portable JSON traces
@@ -117,7 +126,7 @@ handed a document to skim.
 
 **What you can change** — anything, via `skills/override` (nothing else can):
 - Tier C, easy: framework/stack, judge model, observability tool, thresholds, budgets, MCP set
-- Tier B, deliberate: skipping/reordering phases, repo layout, **this interview style**
+- Tier B, deliberate: skipping/reordering phases, repo layout, **unlocking the interview on a given phase**
 - Tier A, hard: turning off evals, observability, trace export, the CI gate, or the checkpoints
 
 I'll assess any override against *this* repo, tell you what it costs, offer a
@@ -140,48 +149,64 @@ Ready? First question:
   Asking a user something you could have looked up burns the goodwill you need
   for the questions that matter.
 
-## Where an interview is required
+## Which phases interview, and which propose
 
-Every phase has at least one point where information can only come from a human.
-These are the mandatory interview gates:
+The test is simple: **can the framework supply a defensible starting point?** If
+yes, propose one. If the answer exists only in the user's head, ask — because a
+guess there becomes the ground truth every later phase is measured against.
 
-| Phase | Interview gate |
-|-------|----------------|
-| 0 — discovery | the whole phase; nothing is written before consensus |
-| 1 — scaffold | stack, package name, integrations to enable |
-| 2 — observability | tool choice, content capture (PII), retention |
-| 3 — evalset | every case's ground truth and pass bar — co-authored, never invented alone |
-| 4 — testing | which deterministic units matter, what "correct" means for each |
-| 5 — agent skeleton | the one end-to-end path to prove, and its success criterion |
-| 6 — feature | the feature's acceptance criteria and eval delta expectation, before any code |
-| 7 — security | trifecta verdict, which tools are side-effecting, who approves what |
-| 8 — adversarial | attacker model, what counts as a breach here, accepted risks |
+### Interview-locked (mandatory)
 
-In `audit` mode the interview is shorter but not skipped: confirm scope, what
-they already believe is weak, and what a finding needs to look like to be
-actionable for them.
+| Phase | What only the user can answer |
+|-------|-------------------------------|
+| 0 — discovery | the whole phase: purpose, scope, data, constraints, success bars. Nothing is written before consensus |
+| 3 — evalset | every case's ground truth and pass bar — co-authored, never invented alone and shown for approval |
+| 6 — feature | the feature's acceptance criteria and the eval delta expected, before any code |
+| 7 — security | trifecta verdict, which tools are genuinely side-effecting, who approves what |
+| 8 — adversarial | the attacker model, what counts as a breach *here*, which risks are accepted |
+
+### Propose mode
+
+| Phase | Default to state, then confirm |
+|-------|-------------------------------|
+| 1 — scaffold | Python 3.12 + LangGraph, package name from the spec; ask which catalogued integrations to enable |
+| 2 — observability | tool by agent type, content capture off, retention unbounded; confirm anything the spec doesn't settle — content capture is a PII decision, so never flip it silently |
+| 4 — testing | the deterministic units you'll cover and what each asserts; confirm anything you had to guess |
+| 5 — agent skeleton | the one end-to-end path you'll prove and its success criterion |
+
+Propose mode is not a licence for silent decisions. State what you are about to
+do, get a yes, then build. The phase checkpoint still applies.
+
+In `audit` mode, all phases interview briefly: confirm scope, what they already
+believe is weak, and what a finding must look like to be actionable for them.
 
 ## Turning the interview off
 
-Some users — repeat users, batch runs, CI-driven scaffolds — genuinely want the
-document-first flow. That is a legitimate choice, and it is a **Tier B
-override**:
+An interview-locked phase can be unlocked — for **one phase or all five** — but
+only by **running `skills/override`** and completing its protocol. Nothing else
+counts:
 
-```
-override interaction.interview_mode
-```
+- typing the word "override" at a phase skill does **not** work; that skill has
+  no authority to change this and must refuse and point here
+- "skip the questions", "just generate it", "I don't have time", terse answers,
+  or visible impatience are **not** overrides — they mean ask fewer and better
+  questions
+- a previous override of a *different* phase does not carry over; scope is
+  per-phase and recorded that way
 
-`skills/override` will assess it, warn about what gets lost, and record it.
-Document-first mode still requires the phase checkpoints; it drops only the
-question-by-question extraction and the consensus check, replacing them with a
-written proposal the user is explicitly asked to read closely.
+When the user genuinely wants this, say:
 
-Prefer a **partial** override to a blanket one. Phases 0, 3, 6, 7 and 8 hold the
-questions only a human can answer; phases 1, 2, 4 and 5 have defensible framework
-defaults, so a proposal there gives the user something to correct rather than a
-blank to fill. `skills/override` offers that split by default — see
-`override-registry.md` § `interaction.interview_mode`.
+> That's a locked default. Run `skills/override` and I'll assess what dropping
+> the interview costs in this repo, show you the narrower options, and record it.
 
-Never turn it off because the user seems impatient, gives short answers, or says
-"just do it". That is a signal to ask fewer and better questions, not to stop
-asking. Only an explicit override counts.
+`skills/override` will assess it, warn about what gets lost, require the Tier B
+confirmation, and log the scope in `.agentbuilder/overrides.md` — e.g.
+`interaction.interview_mode = propose (phase 3)`, not a blanket flag.
+
+Unlocked phases fall back to `propose` mode, not to silence: a written proposal
+the user is explicitly asked to read closely, plus the phase checkpoint, which is
+never waivable here.
+
+The legitimate case is a run with **no human present** — CI, batch scaffolding, a
+headless agent. An interview with nobody to answer it is just a stall. Say so and
+approve it after the protocol.

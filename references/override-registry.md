@@ -41,7 +41,7 @@ row as part of the override.
 | `mcp.vetting` | every server vetted + version-pinned | `skills/1-scaffold`, `.mcp.json` | Tool poisoning: hostile instructions in a tool description reach the model with high authority and are never seen by a human. 66% of scanned servers have security findings. Unpinned `npx -y` installs unreviewed code on every launch. |
 | `context.budgets` | 150/300/200/250 lines | `tools/context_budget.py`, CI | Context files grow until they become the token cost they exist to prevent. |
 | `repo.layout` | `templates/` structure | `skills/1-scaffold` | Tooling paths (Makefile, CI, index generator) assume it. Changing it is fine if you update those together. |
-| `interaction.interview_mode` | `interview` — questions in small batches + a consensus check before any artifact is written | root `SKILL.md`, every phase skill, `references/interview-protocol.md` | Phases revert to writing a document and asking "look right?". Users skim; unstated nuance gets locked in as fact, and the first symptom is evals encoding the wrong ground truth several phases later. Cheap to revert, expensive to notice. |
+| `interaction.interview_mode` | `interview` in phases 0, 3, 6, 7, 8 (questions in small batches + a consensus check before any artifact is written); `propose` in 1, 2, 4, 5 | root `SKILL.md`, those phase skills, `references/interview-protocol.md` | The locked phase reverts to drafting a document and asking "look right?". Users skim; unstated nuance gets locked in as fact, and the first symptom is evals encoding the wrong ground truth several phases later. Cheap to revert, expensive to notice. **Scope is per-phase** — record which phase, never a blanket flag. Only a completed `skills/override` run lifts it; the word "override" typed at a phase skill does not. |
 | `dev.methodology` | TDD (deterministic) + tiered EDD (model) — `references/methodology.md` | `skills/3-evalset`, `skills/4-testing`, `skills/6-feature` | Changes the order of test/eval/implement within a feature and the Tier 1/Tier 2 eval split. |
 | `evals.tier_split` | ~30% Tier 1 before code, rest harvested | `skills/3-evalset` | Pushing toward 100% Tier 1 spends the user's scarcest resource on imagined failure modes and anchors the suite; pushing toward 0% means nothing gates the first build. |
 
@@ -109,27 +109,27 @@ want faster feedback on agent logic" — the narrower alternative is to split th
 function so the deterministic pre/post-processing is testable, which gets them
 the fast feedback without the false coverage. Offer that first.
 
-### `interaction.interview_mode` → `document`
+### `interaction.interview_mode` → `propose` (unlocking phase 0, 3, 6, 7 or 8)
+
+Assess **per phase**, not as one decision. Ask which phase and why before
+anything else.
 
 | Signal | Verdict |
 |--------|---------|
-| Non-interactive run (CI, batch scaffold, headless agent) — nobody is there to answer | **ADVANTAGE** — an interview with no human is just a stall; document mode plus an explicit review step is correct |
-| Repeat user who has run this framework before on a near-identical agent, and can point at the prior `spec.md` | **NEUTRAL** — offer the narrower alternative: interview only the deltas from the prior spec |
-| Greenfield agent, first run, enterprise data in scope | **STRONG DISADVANTAGE** — this is exactly the case the interview exists for; the ground truth for phase 3 comes from nowhere else |
-| Stated motivation is speed or impatience | **DISADVANTAGE** — the interview is ~10 minutes; re-deriving a wrong spec after phase 3 is days. Offer the narrower alternative: fewer, sharper questions and a shorter consensus check |
+| Non-interactive run (CI, batch scaffold, headless agent) — nobody is there to answer | **ADVANTAGE** — an interview with no human is a stall; propose mode plus an explicit review step is correct. Applies to all five |
+| Phase 0, greenfield, enterprise data in scope | **STRONG DISADVANTAGE** — this is the case the interview exists for; phase 3's ground truth comes from nowhere else |
+| Phase 3, and the user wants cases generated from an approved `spec.md` | **DISADVANTAGE** — a generated case tests what the spec *says*, not what the user *meant*. Narrower alternative: generate a draft set, then interview only the pass bars |
+| Phase 6, small well-specified feature already in the backlog with acceptance criteria written | **NEUTRAL** — the interview's input already exists; restating it for confirmation is enough |
+| Phase 7 or 8, agent with data + tools | **STRONG DISADVANTAGE** — the trifecta verdict and the breach definition are judgement calls about *this* deployment; guessing them makes the security phases theatre |
+| Repeat user with a prior `spec.md` for a near-identical agent | **NEUTRAL for phase 0** — offer interviewing only the deltas |
+| Stated motivation is speed or impatience | **DISADVANTAGE** — the interview is ~10 minutes; a wrong spec costs days from phase 3 onward. Offer fewer, sharper questions first |
 
-Narrower alternative to offer first, in almost every case: a **partial** override
-rather than a blanket one. Every phase interviews by default; if the user insists
-on dropping it, drop it only where the framework can supply a defensible starting
-point.
+Narrower alternatives, in order of preference: interview only the deltas from an
+existing artifact → interview only the judgement calls and propose the rest →
+unlock one phase → unlock all five. Record the scope as
+`interaction.interview_mode = propose (phase N)`.
 
-| Phase | Keep the interview? | Why |
-|-------|--------------------|-----|
-| 0 discovery, 3 evalset, 6 feature, 7 security, 8 adversarial | **yes** | the answer exists only in the user's head — purpose, a case's ground truth, a feature's acceptance criteria, which tools really have side effects, what counts as a breach here. A guess becomes the ground truth everything downstream is measured against |
-| 1 scaffold, 2 observability, 4 testing, 5 skeleton | droppable | the framework already has a defensible default, so a written proposal has the user *correcting* a sane starting point rather than supplying missing facts |
-
-Record a partial override as `interaction.interview_mode = document (phases 1,2,4,5)`
-in the ledger, not as a blanket `document`.
+Phases 1, 2, 4 and 5 are already `propose`; there is nothing to override there.
 
 ### `docs.docstring_enforcement` → off
 

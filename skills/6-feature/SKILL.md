@@ -11,10 +11,11 @@ description: >-
 Goal: add one backlog feature safely. Never batch features; never merge without
 a human checkpoint and an eval run.
 
-**Interview first** — mandatory unless `interaction.interview_mode` is
-overridden. Ask about the feature's acceptance criteria and the eval delta you
-expect, before any code. Small batches, then a consensus check the user accepts
-*before* you write or generate anything. → `references/interview-protocol.md`
+**Interview required — this phase is locked to it.** Ask about the feature's
+acceptance criteria and the eval delta you expect, before any code exists. Small
+batches, then a consensus check the user accepts *before* you write or generate
+anything. Only a completed run of `skills/override` lifts this; the word
+"override" typed here does not. → `references/interview-protocol.md`
 
 ## Steps
 

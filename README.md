@@ -14,27 +14,39 @@ agent logic is written**, and a research-grounded rubric for both.
 - **audit** — score an existing eval / observability setup against the standards
   docs and return a prioritized gap list.
 
-## How it runs: an interview, not a document review
+## How it runs: an interview where it counts
 
-By default every phase is a **rigorous interview**. The agent asks you questions
-in small batches, pushes back on vague answers, and reads back a numbered
-consensus check that you must accept — *before* it writes a spec, an eval set or
-a threat model to disk. Artifacts are records of what was agreed, never proposals
-you are asked to skim.
+Five phases are **locked to interview mode** — discovery (0), eval sets (3),
+every feature (6), security (7) and adversarial testing (8). In those, the agent
+asks you questions in small batches, pushes back on vague answers, and reads back
+a numbered consensus check you must accept *before* it writes a spec, an eval
+case or a threat model to disk. Artifacts are records of what was agreed, never
+proposals you are asked to skim.
 
-This is deliberate. The failure mode it prevents is the common one: an agent
-writes a plausible markdown plan, you skim it, say "looks good", and every
-nuance it guessed at is silently locked in — surfacing three phases later as
-evals encoding the wrong ground truth.
+The test for what gets locked: **can the framework supply a defensible starting
+point?** For scaffolding (1), observability (2), tests (4) and the first skeleton
+(5) it can — so those run in `propose` mode: it states the default, gets an
+explicit yes, and builds. Handing you a blank where a sane default exists just
+spends the attention you need for the questions that matter.
 
-Document-first mode still exists (useful for CI, batch scaffolds, or a repeat
-run against a near-identical spec), but it is a deliberate **Tier B override**:
+The failure mode this prevents is the common one: an agent writes a plausible
+markdown plan, you skim it, say "looks good", and every nuance it guessed at is
+silently locked in — surfacing three phases later as evals encoding the wrong
+ground truth.
+
+Unlocking a phase is possible — a headless CI run has nobody to interview — but
+only by **running the override skill and completing its protocol**:
 
 ```
-override interaction.interview_mode
+skills/override → interaction.interview_mode
 ```
 
-Rules, the consensus-check block, and the per-phase interview gates:
+Typing "override" at a phase, or saying "skip the questions", does nothing; the
+phase refuses and points at the skill. Scope is per-phase and recorded that way
+(`interaction.interview_mode = propose (phase 3)`), and an unlocked phase falls
+back to `propose`, not to silence — the checkpoint is never waivable.
+
+Rules, the consensus-check block, and the per-phase table:
 [`references/interview-protocol.md`](references/interview-protocol.md).
 
 Every run opens with a **"Good to know"** block: how the session will run, which
@@ -49,7 +61,7 @@ ceremony, and what is explicitly out of scope.
 | `skills/0-discovery` … `skills/8-adversarial` | the phase sub-skills, each independently invocable (`build` / `add` / `audit`) |
 | `skills/capabilities` | what the framework can do and what you can invoke — see [CAPABILITIES.md](CAPABILITIES.md), generated from live repo state |
 | `skills/override` | the **only** way to change any default — assesses the specific repo, warns, offers alternatives, records a ledger |
-| `references/interview-protocol.md` | the mandatory interview style: how to ask, the consensus check, per-phase interview gates, how to turn it off |
+| `references/interview-protocol.md` | which phases interview vs. propose, how to ask, the consensus check, and how a phase gets unlocked |
 | `references/override-registry.md` | every overridable item, its tier, blast radius, and assessment heuristics |
 | `references/methodology.md` | TDD for deterministic code + tiered EDD for model behavior; the per-feature ordering |
 | `references/context-and-cost.md` | the context files (AGENTS.md, ARCHITECTURE/CHANGELOG/TODO) and model-tier routing that stop agents burning tokens re-deriving context |
@@ -103,7 +115,8 @@ Codex reads `AGENTS.md`. Add a pointer at the top of your project's `AGENTS.md`
 
 When asked to build, evaluate, observe, secure or red-team an AI agent, read
 `~/agent-builder/SKILL.md` and follow it. It is interview-first: ask questions
-in small batches and reach a consensus check before writing any file. Phase
+in small batches and reach a consensus check before writing any file in phases
+0, 3, 6, 7 and 8; propose defaults in the rest. Phase
 sub-skills are in `~/agent-builder/skills/<phase>/SKILL.md`, rubrics in
 `~/agent-builder/references/`.
 ```
@@ -121,8 +134,9 @@ description: agent-builder — interview-first framework for building AI agents
 alwaysApply: false
 ---
 When building, evaluating, observing, securing or red-teaming an AI agent, read
-`~/agent-builder/SKILL.md` and follow it exactly. Interview style is mandatory:
-questions in small batches, consensus check before any file is written.
+`~/agent-builder/SKILL.md` and follow it exactly. Phases 0, 3, 6, 7 and 8 are
+interview-locked: questions in small batches, consensus check before any file is
+written.
 RULE
 ```
 
@@ -168,9 +182,10 @@ All of these read a project rules file (`.clinerules`, `.roo/rules/`,
 `.continue/rules/`, `AGENTS.md`). Drop in the same pointer block. If your tool
 has no rules mechanism at all, paste this into the chat once per session:
 
-> Read `~/agent-builder/SKILL.md` and follow it for this task. Interview me
-> phase by phase — small batches of questions, a consensus check before you
-> write anything, and a checkpoint I have to approve between phases.
+> Read `~/agent-builder/SKILL.md` and follow it for this task. Phases 0, 3, 6, 7
+> and 8 are interview-locked — small batches of questions and a consensus check
+> before you write anything. Propose defaults for the rest. Checkpoint between
+> every phase.
 
 ### Verifying the install
 

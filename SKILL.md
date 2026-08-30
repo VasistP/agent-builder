@@ -18,8 +18,7 @@ agent logic is written, then drives feature work through an eval-gated loop with
 ## Non-negotiables
 
 1. **Evaluation** and **observability** are always set up. They cannot be skipped
-   from inside this skill. (A separate `agent-builder-override` skill will exist
-   for teams that must opt out; do not implement opt-out here.)
+   from inside this skill or any phase skill.
 2. **No fabricated model calls.** Deterministic tests cover only non-LLM
    functions. Anywhere a real model call is required, that path is covered by
    evals — faking it would invalidate the evals.
@@ -27,9 +26,31 @@ agent logic is written, then drives feature work through an eval-gated loop with
    OpenTelemetry-GenAI-shaped JSON trace logs so the user can migrate tools.
 4. **Human checkpoint between phases.** After each phase, print a summary and
    wait for the user to reply `approved` before continuing.
+   **Methodology:** strict TDD for deterministic code, tiered EDD for model
+   behavior — see `references/methodology.md`. Both kinds of test are written
+   before the implementation they cover.
 5. **API keys need explicit permission.** The eval judge defaults to a local
    Ollama model. Only use a hosted model after asking; if the user picks a large
    paid model, warn that every eval run costs money.
+
+## Everything is locked — `skills/override` is the only key
+
+No skill in this framework may change any default, structure, or configuration
+listed in `references/override-registry.md`. That includes routine-looking
+config (judge model, latency budgets, MCP list), not just the non-negotiables.
+
+When a user asks any skill to skip, disable, replace, or reconfigure something:
+
+> That's a locked default. I can't change it from here — run
+> `skills/override` and I'll assess what it would cost *in this repo*, show you
+> the alternatives, and record the decision.
+
+Then stop and let them decide whether to invoke it. Do not pre-assess, do not
+pre-argue, and do not treat the request itself as consent. The friction is
+deliberate: it gives the user a moment to decide if they actually want it.
+
+Active overrides live in `.agentbuilder/overrides.md`. Read it at the start of
+every run — it tells you which guarantees are currently switched off.
 
 ## Modes — ask the user first
 
@@ -38,6 +59,7 @@ agent logic is written, then drives feature work through an eval-gated loop with
 | **full** | greenfield project | phases 0 → 6 in order |
 | **targeted** | "just set up evals", "just observability", "evals + observability" | jump straight to `skills/2-observability` and/or `skills/3-evalset` (and `skills/4-testing` if asked) against the existing repo — never re-scaffold, never touch agent logic |
 | **audit** | "review our existing eval / observability setup" | run the relevant sub-skill(s) in `audit` entry path: score the current setup against `references/eval-standards.md` / `references/observability-standards.md`, output a prioritized gap list with rough effort |
+| **override** | "skip evals", "change the judge model", "we don't want checkpoints" | hand off to `skills/override` — the only skill permitted to change a default |
 
 Detect a resumable run from `.agentbuilder/progress.md`. If it exists, offer to
 resume from the last unapproved phase.

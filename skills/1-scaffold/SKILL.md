@@ -20,6 +20,11 @@ place. No agent logic yet.
   (docstring config, `tools/fn_search.py`, `FUNCTIONS.md`, `.mcp.json`, Makefile
   targets). Report what was skipped.
 
+**Locked.** Repo layout, docstring enforcement, and the index drift check are
+framework defaults — see `references/override-registry.md`. Stack choice is the
+one thing you actively ask about here (Tier C), but changing it *after* scaffold
+goes through `skills/override`.
+
 ## Steps
 
 ### 1. Confirm the stack

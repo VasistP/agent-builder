@@ -75,6 +75,7 @@ def _run_single(cases: list[dict]) -> list[dict]:
         }
         checks = _grade_one(case.get("graders", []), resp.text, ctx)
         out.append({"id": case["id"], "kind": "single", "tags": case.get("tags", {}),
+                    "tier": case.get("tier", 1), "source": case.get("source", "spec"),
                     "passed": all(c["passed"] for c in checks), "checks": checks})
     return out
 
@@ -99,18 +100,31 @@ def _run_conversations(cases: list[dict]) -> list[dict]:
                    "latency_s": time.time() - start, "trace_excerpt": " -> ".join(final.tool_calls)}
             checks += _grade_one(case.get("end_expect", []), final.text, ctx)
         out.append({"id": case["id"], "kind": "conversation", "tags": case.get("tags", {}),
+                    "tier": case.get("tier", 1), "source": case.get("source", "spec"),
                     "passed": all(c["passed"] for c in checks), "checks": checks})
     return out
 
 
 def _summarize(records: list[dict]) -> dict:
-    """Aggregate pass rates overall and per tag=value slice."""
+    """Aggregate pass rates overall, per tag=value slice, and per eval tier."""
     by_tag: dict[str, list[bool]] = defaultdict(list)
     for r in records:
         by_tag["overall"].append(r["passed"])
+        by_tag[f"tier={r.get('tier', 1)}"].append(r["passed"])
         for k, v in r["tags"].items():
             by_tag[f"{k}={v}"].append(r["passed"])
     return {k: round(sum(v) / len(v), 3) for k, v in by_tag.items() if v}
+
+
+def _tier_mix(records: list[dict]) -> dict:
+    """Return the Tier 1 / Tier 2 split, used as a suite-health signal.
+
+    A suite still dominated by Tier 1 (spec-derived) cases after several features
+    means nobody is harvesting real failures — see references/methodology.md.
+    """
+    total = len(records) or 1
+    t1 = sum(1 for r in records if r.get("tier", 1) == 1)
+    return {"tier_1": t1, "tier_2": total - t1, "tier_1_pct": round(t1 / total, 3)}
 
 
 def main() -> int:
@@ -134,10 +148,12 @@ def main() -> int:
         records += _run_conversations(convos)
 
     summary = _summarize(records)
+    mix = _tier_mix(records)
     payload = {
         "timestamp": datetime.now(UTC).isoformat(),
         "agent_sha": _git_sha(),
         "counts": {"single": len(single), "conversation": len(convos)},
+        "tier_mix": mix,
         "summary": summary,
         "records": records,
     }
@@ -153,6 +169,12 @@ def main() -> int:
         delta = rate - prev_summary.get(tag, rate)
         arrow = f"  ({delta:+.3f})" if delta else ""
         print(f"  {tag:<28} {rate:6.1%}{arrow}")
+
+    print(f"\n  Tier mix: {mix['tier_1']} spec-derived / {mix['tier_2']} "
+          f"harvested from traces")
+    if mix["tier_1_pct"] > 0.5 and len(records) > 5:
+        print("  ! Suite is still majority Tier 1 — are real failures being "
+              "harvested? See references/methodology.md")
 
     return 0 if summary.get("overall", 0) >= 0 else 1
 

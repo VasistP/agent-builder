@@ -16,6 +16,11 @@ configuration and `evals/run_evals.py`.
 Read `references/eval-standards.md` (the rubric) and
 `references/eval-authoring-guide.md` (how to co-write good cases) first.
 
+**Locked.** If the user asks to skip evals, drop the CI gate, lower the pass
+threshold, or change the judge/case-count defaults, refuse and point them at
+`skills/override`. Don't argue the merits here and don't treat the request as
+consent — that assessment is the override skill's job.
+
 ## Entry paths
 
 - **build** / **add** — create the sets interactively (below). `add` works
@@ -27,6 +32,25 @@ Read `references/eval-standards.md` (the rubric) and
   refreshed? sample size adequate? safety/grounding covered?). Check context7 /
   web for newer practice. Output prioritized gaps + effort. No changes unless asked.
 
+## Tiered EDD — what to write now vs. later
+
+Per `references/methodology.md`, do **not** try to author the whole corpus before
+the agent exists. In this phase you write **Tier 1 only** — roughly 30% of the
+target suite, derived from things you genuinely know from `.agentbuilder/spec.md`:
+
+| Spec section | Tier 1 cases to derive |
+|---|---|
+| Example requests | happy-path task-completion |
+| Out of scope | refusal |
+| Feared failure modes | negative cases |
+| Constraints | latency / step-budget |
+| Data sources | tool-selection, groundedness |
+
+The other ~70% (Tier 2) gets harvested from real traces in phase 5 and each
+phase 6 feature. Every case carries `"tier"` and `"source"`. Explain this split
+to the user so they understand why you're stopping at 30% — it isn't laziness,
+it's avoiding an anchored suite aimed at imagined failures.
+
 ## Before you start — warn the user
 
 > Creating a good eval set is interactive and takes real time. You must be present
@@ -36,10 +60,11 @@ Read `references/eval-standards.md` (the rubric) and
 
 Then ask:
 
-1. **How many single-response cases?** (suggest 20–50 for a POC; more for
-   higher-stakes agents — cite `references/eval-standards.md` on sample size.)
-2. **How many conversations?** (suggest 5–15, each 3–8 turns.)
-3. Time budget now vs. split across sessions? (Sets can grow incrementally;
+1. **Target** single-response cases for the full suite (suggest 20–50 for a POC;
+   more for higher-stakes agents — cite `references/eval-standards.md` E11 on
+   sample size). You will write ~30% of that now.
+2. **Target** conversations (suggest 5–15, each 3–8 turns). Same 30% now.
+3. Time budget now vs. split across sessions? (Sets grow incrementally;
    `run_evals.py` picks up whatever is in the files.)
 
 ## Judge setup
@@ -74,7 +99,7 @@ Do this one case at a time, with the user:
    conversation assertions (goal achieved? no loops? recovered from tool error?).
 5. Append to the correct JSONL file (see schema in `references/eval-authoring-guide.md`).
 6. Tag each case: `capability`, `difficulty`, `data_source`, `safety` so reports
-   can slice.
+   can slice — plus `"tier": 1` and `"source": "spec"` in this phase.
 
 ## Storage — keep them separate
 

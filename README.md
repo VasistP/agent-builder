@@ -20,6 +20,9 @@ agent logic is written**, and a research-grounded rubric for both.
 |------|---------|
 | `SKILL.md` | orchestrator: modes, non-negotiables, checkpoint protocol |
 | `skills/0-discovery` … `skills/6-feature` | the phase sub-skills, each independently invocable (`build` / `add` / `audit`) |
+| `skills/override` | the **only** way to change any default — assesses the specific repo, warns, offers alternatives, records a ledger |
+| `references/override-registry.md` | every overridable item, its tier, blast radius, and assessment heuristics |
+| `references/methodology.md` | TDD for deterministic code + tiered EDD for model behavior; the per-feature ordering |
 | `references/eval-standards.md` | research-grounded eval rubric (build + audit) |
 | `references/observability-standards.md` | research-grounded observability rubric + portable JSON trace schema |
 | `references/eval-authoring-guide.md` | how to co-author cases with the user; JSONL schemas; grader catalogue |
@@ -29,10 +32,13 @@ agent logic is written**, and a research-grounded rubric for both.
 
 ## Non-negotiables
 
-1. Evals and observability are always set up (a separate override skill, TBD,
-   handles opt-out).
+1. Evals and observability are always set up. Every default — including routine
+   config — is locked, and `skills/override` is the only key. Invoking it is
+   deliberate friction: a moment to decide whether you actually want the change.
 2. Deterministic tests never fabricate model calls — model behavior is measured
    by evals only.
+   Deterministic code is built strict-TDD; model behavior uses tiered EDD
+   (~30% spec-derived cases up front, the rest harvested from real traces).
 3. Observability always writes portable OTel-GenAI-shaped JSON traces
    (`logs/traces/*.jsonl`) — no vendor lock-in.
 4. Human checkpoint between every phase.

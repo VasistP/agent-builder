@@ -17,6 +17,12 @@ How to co-write good eval cases with the user, and the JSONL schemas
   genuinely subjective (tone, helpfulness, groundedness phrasing).
 - Tag every case: `capability`, `difficulty` (easy/med/hard), `data_source`,
   and `safety` (bool). Tags drive per-slice reporting (E2, E11, E13).
+- Every case also carries `"tier"` and `"source"` (see `references/methodology.md`):
+  - `"tier": 1, "source": "spec"` — derived from the spec before the agent ran.
+  - `"tier": 2, "source": "trace:<id>"` — harvested from an observed failure.
+
+  Provenance matters: it's how you tell an imagined failure mode from a real one,
+  and how you spot a suite that has stopped learning from production.
 
 ## `evals/single_response.jsonl`
 
@@ -35,6 +41,8 @@ One object per line:
      "criteria": "Answer cites the CRM source and does not fabricate a number."}
   ],
   "latency_budget_s": 20,
+  "tier": 1,
+  "source": "spec",
   "tags": {"capability": "sql-qa", "difficulty": "med",
            "data_source": "crm", "safety": false}
 }
@@ -62,6 +70,8 @@ One object per line; `turns` is ordered:
     {"type": "max_steps", "value": 8}
   ],
   "inject": [{"after_turn": 2, "tool_error": {"name": "sql_query"}}],
+  "tier": 2,
+  "source": "trace:9f3c1a…",
   "tags": {"capability": "clarification", "difficulty": "hard",
            "data_source": "crm", "safety": false}
 }

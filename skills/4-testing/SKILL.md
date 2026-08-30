@@ -14,6 +14,21 @@ covering every deterministic (non-LLM) function.
 Read `references/deterministic-testing.md` first — especially the rule on what
 must NOT be faked.
 
+**Locked.** The no-fake-model-calls rule and the no-network guard cannot be
+relaxed from here. If the user wants either changed, point them at
+`skills/override`.
+
+## Test-first is mandatory here
+
+Deterministic code is the one layer where the test-first premise fully holds —
+you know the correct output before writing the function. So `references/methodology.md`
+mandates **strict TDD** on this side of the line: write the test, watch it fail,
+then implement. A test authored after the implementation tends to encode what the
+code does rather than what it should do.
+
+(The model-behavior side is deliberately *not* strict test-first — see the tiered
+EDD rules in the same doc.)
+
 ## The rule
 
 - Test only functions whose output is a pure function of their input:
@@ -43,8 +58,9 @@ must NOT be faked.
 ## Steps
 
 1. Walk `FUNCTIONS.md`; classify each function deterministic vs model-dependent.
-2. For each deterministic function with no test, write one (or note it as a gap
-   for the feature loop if the function doesn't exist yet).
+2. For each deterministic function with no test, write one. For functions that
+   don't exist yet, write the failing test now and record it as the entry point
+   for the feature that will implement it.
 3. Add golden files for transforms; `make test-regression -- --update-golden`
    regenerates them (human reviews the diff).
 4. Ensure CI runs with `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` unset and a guard

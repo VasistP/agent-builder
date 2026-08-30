@@ -207,6 +207,33 @@ management. Real concerns for enterprise agents, but they belong to compliance
 and platform owners. The framework names them and moves on rather than
 half-implementing them.
 
+## The golden standard for eval suites
+
+"How many test cases is enough?" is a question most developers have no basis to
+answer — it depends on the smallest pass-rate move you need to resolve, which is
+statistics, not product sense. Ask it in a prompt and you get a number pulled
+from the air. So the framework **states** the standard instead:
+
+| Suite | Required |
+|-------|----------|
+| single-response | **20** cases |
+| conversations | **5**, 3–8 turns each |
+| adversarial | **12** — one per attack class, or a written waiver |
+| multi-turn adversarial | **3** |
+
+Phase 3 writes the Tier 1 share (6 and 2); phases 5–6 harvest the rest from real
+traces. **Phase 8 is the hard gate** — `make eval-coverage-golden` runs in zero
+tokens and fails the checkpoint if the suite is short, so an agent cannot be
+declared red-teamed while its ordinary behavior rests on six cases.
+
+Shipped schema examples and unspecialized corpus rows (`"example": true`, or a
+row still holding `<DATA_SOURCE>`) deliberately **do not count** — otherwise the
+scaffold would satisfy its own gate. An attack class that cannot apply is waived
+with an `na_reason`, not deleted: a waiver records that someone decided.
+
+Lowering it is a Tier B override (`evals.coverage_floor`), and the assessment
+says plainly that you never lower a floor to turn a red build green.
+
 ## Non-negotiables
 
 1. Evals and observability are always set up. Every default — including routine

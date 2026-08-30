@@ -51,8 +51,42 @@ case per attack class, containing **placeholders**: `<DATA_SOURCE>`,
 
 A generic corpus proves almost nothing — the attack that works on *this* agent
 names *its* tools and *its* data. Fill every placeholder from
-`.agentbuilder/spec.md` and the tool registry. Drop classes that genuinely don't
-apply (no external channel → no exfiltration case) and record why.
+`.agentbuilder/spec.md` and the tool registry, and **delete the `"example": true`
+field** as you specialize each case. That field is what the coverage gate uses to
+tell a shipped template from evidence: a row still carrying it, or still holding a
+`<PLACEHOLDER>`, does not count toward the standard.
+
+A class that genuinely cannot apply (no external channel → no exfiltration) is
+**waived, not deleted**: keep the row and add `"na_reason": "<why>"`. A waiver
+records that someone decided; a missing row records that nobody noticed, and only
+one of those is defensible six months later.
+
+## Step 1b — The golden-standard gate
+
+This phase is where the eval suite has to be finished, not just the red-team part
+of it. Phase 3 wrote the Tier 1 share and phases 5–6 harvested more; here the
+whole suite must reach the standard:
+
+| Suite | Required |
+|-------|----------|
+| `single_response.jsonl` | 20 specialized cases |
+| `conversations.jsonl` | 5 conversations |
+| `adversarial.jsonl` | 12 — every attack class covered or waived |
+| `adversarial_conversations.jsonl` | 3 multi-turn attacks |
+
+```bash
+make eval-coverage-golden     # zero tokens; exits non-zero if short
+```
+
+**This gate blocks the phase 8 checkpoint.** If the capability suite is short,
+say so plainly and go back to `skills/3-evalset` to finish it — an agent that is
+hardened against injection but has six capability cases is not tested, it is
+tested against attackers only. Do not run the live session against a suite that
+has not cleared the gate; you would be red-teaming an agent whose ordinary
+behavior is unmeasured.
+
+Lowering the standard is a Tier B override (`evals.coverage_floor`) and needs a
+completed `skills/override` run — not a decision made here.
 
 ## Step 2 — Run it
 
@@ -98,6 +132,7 @@ emerge over time, so a suite that only runs on PRs ages badly.
 
 ```
 ### Checkpoint: phase 8 — adversarial
+Golden standard: <make eval-coverage-golden output — must pass>
 Corpus: <n> cases across <n> classes, specialized to this agent
 Breaches: <n> — <class: what happened, which control failed>
 Fixed: <control-level fixes, not per-case patches>

@@ -84,6 +84,14 @@ Scoring an existing setup: mark each item `pass` / `partial` / `fail` /
 - **Fix:** add a refresh ritual; import failure traces as new cases.
 
 ## E11. Sample size is adequate for the decision
+- **The golden standard this framework enforces:** 20 single-response cases,
+  5 conversations, 12 adversarial (one per attack class, or a recorded waiver),
+  3 multi-turn adversarial. Checked by `evals/run_evals.py --check-coverage`,
+  binding at phase 8, lowered only via `skills/override`
+  (`evals.coverage_floor`). It is stated to the developer rather than asked of
+  them: "how many cases is enough" depends on the smallest effect you need to
+  resolve, which is not a question a product owner can answer from intuition.
+  These are floors for a POC, not targets — release gating wants hundreds.
 - **Why:** a 20-case set can't distinguish a 3-point pass-rate move from noise.
 - **Verify:** set size justified against the smallest pass-rate change you need
   to detect (rough rule: tens of cases per capability for POC signal; hundreds

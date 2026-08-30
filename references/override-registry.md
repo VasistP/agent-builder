@@ -41,6 +41,7 @@ row as part of the override.
 | `mcp.vetting` | every server vetted + version-pinned | `skills/1-scaffold`, `.mcp.json` | Tool poisoning: hostile instructions in a tool description reach the model with high authority and are never seen by a human. 66% of scanned servers have security findings. Unpinned `npx -y` installs unreviewed code on every launch. |
 | `context.budgets` | 150/300/200/250 lines | `tools/context_budget.py`, CI | Context files grow until they become the token cost they exist to prevent. |
 | `repo.layout` | `templates/` structure | `skills/1-scaffold` | Tooling paths (Makefile, CI, index generator) assume it. Changing it is fine if you update those together. |
+| `evals.coverage_floor` | the golden standard — 20 single, 5 conversations, 12 adversarial (every attack class covered or waived), 3 multi-turn adversarial; Tier 1 milestone 6/2 at phase 3 | `evals/run_evals.py --check-coverage`, `make eval-coverage-golden`, `ci/eval.yml`, phase 8 checkpoint | The suite reports a pass rate it cannot support. Below ~20 cases a 3-point move is indistinguishable from noise, so the gate stops being evidence and becomes decoration — and unlike a missing gate, a passing thin one actively reassures people. Uncovered attack classes are the ones nobody thought about. |
 | `interaction.interview_mode` | `interview` in phases 0, 3, 6, 7, 8 (questions in small batches + a consensus check before any artifact is written); `propose` in 1, 2, 4, 5 | root `SKILL.md`, those phase skills, `references/interview-protocol.md` | The locked phase reverts to drafting a document and asking "look right?". Users skim; unstated nuance gets locked in as fact, and the first symptom is evals encoding the wrong ground truth several phases later. Cheap to revert, expensive to notice. **Scope is per-phase** — record which phase, never a blanket flag. Only a completed `skills/override` run lifts it; the word "override" typed at a phase skill does not. |
 | `dev.methodology` | TDD (deterministic) + tiered EDD (model) — `references/methodology.md` | `skills/3-evalset`, `skills/4-testing`, `skills/6-feature` | Changes the order of test/eval/implement within a feature and the Tier 1/Tier 2 eval split. |
 | `evals.tier_split` | ~30% Tier 1 before code, rest harvested | `skills/3-evalset` | Pushing toward 100% Tier 1 spends the user's scarcest resource on imagined failure modes and anchors the suite; pushing toward 0% means nothing gates the first build. |
@@ -51,7 +52,7 @@ row as part of the override.
 |------|---------|-------|
 | `stack.framework` | Python 3.12 + LangGraph | Genuinely free choice; often mandated by the company. Low risk. |
 | `evals.judge_provider` / `judge_model` | `ollama` / `llama3.1:8b` | Switching to hosted costs money per run — always quantify it. |
-| `evals.case_counts` | 20–50 single, 5–15 conversations | Below ~20 the pass rate is too noisy to gate on (see `eval-standards.md` E11). |
+| `evals.case_counts` | *targets* above the floor: 20–50 single, 5–15 conversations | Growing the suite past the floor is free. Going *below* the floor is `evals.coverage_floor` (Tier B), not this. |
 | `evals.runs_per_case` | 3 | Raising it tightens the noise band; dropping below 3 is Tier A, not C — see `evals.multi_run`. |
 | `guardrails.budgets` | steps/cost/time/breaker per `Budgets` | Raise per the spec rather than disabling. Removing them entirely is Tier B: they bound blast radius. |
 | `tools.catalogue_size` | audited at ~15 | Advisory warning, not a hard block. Overlap matters more than count. |
@@ -108,6 +109,21 @@ Effectively always **STRONG DISADVANTAGE**. The stated motivation is usually "I
 want faster feedback on agent logic" — the narrower alternative is to split the
 function so the deterministic pre/post-processing is testable, which gets them
 the fast feedback without the false coverage. Offer that first.
+
+### `evals.coverage_floor` → lower
+
+Ask which floor and by how much before assessing. Then:
+
+| Signal | Verdict |
+|--------|---------|
+| Request is to drop the *capability* floor so phase 8 can close | **STRONG DISADVANTAGE** — this is the exact regret the gate prevents: a hardened agent whose ordinary behavior is measured by six cases. Offer time-boxing phase 8 instead, so the suite gets finished rather than waived |
+| Agent is a genuinely narrow single-capability tool (1 tool, no retrieval, one request shape) | **NEUTRAL on the count, DISADVANTAGE on the classes** — 20 cases over one capability is redundant; 12 attack classes over one tool is not. Offer lowering single-response to 12 and holding everything else |
+| Request is to skip attack classes rather than waive them | **STRONG DISADVANTAGE** — a waiver costs one line and preserves the record. There is no cost being avoided here except writing down a reason |
+| Throwaway POC, explicitly time-boxed, no users, no enterprise data | **DISADVANTAGE but defensible** — time-box it and set the expiry to the POC's end date |
+| Motivation is that authoring cases is slow | **Offer the narrower alternative**: harvest Tier 2 cases from existing traces (`logs/traces/`) — most projects at this point already have the raw material for a dozen cases and have not looked |
+
+Never lower a floor to make a red build green. Say that plainly: the build is
+telling the truth, and the suite is what is short.
 
 ### `interaction.interview_mode` → `propose` (unlocking phase 0, 3, 6, 7 or 8)
 

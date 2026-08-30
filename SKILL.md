@@ -34,7 +34,10 @@ human checkpoint between every phase**.
    least-privilege tools, approval gates, injection evals.
    → `references/security-standards.md`
 8. **Evals measure reliability, not one sample.** 3+ runs/case; deltas inside the
-   noise band aren't signal; the gate is pass^k. → `references/eval-standards.md`
+   noise band aren't signal; the gate is pass^k. A **golden standard** of 20
+   single / 5 conversations / 12 adversarial (every attack class covered or
+   waived) / 3 multi-turn adversarial is stated to the user, never asked of them,
+   and enforced by `make eval-coverage`. → `references/eval-standards.md`
 9. **API keys need explicit permission.** Judge defaults to local Ollama; warn
    that a hosted judge costs money per run.
 10. **Interview-locked phases: 0, 3, 6, 7, 8.** Their inputs exist only in the
@@ -126,7 +129,7 @@ Resume from `.agentbuilder/progress.md` if present.
 | 5 | `5-agent-skeleton` → minimal agent loop | one traced call; baseline eval |
 | 6 | `6-feature` (repeat) → one feature per run (interview) | eval delta + approval |
 | 7 | `7-security` → boundaries, scoping, injection evals (interview) | trifecta verdict; a side-effecting tool demonstrably blocked |
-| 8 | `8-adversarial` → red-team corpus + live session (interview) | zero breaches, or accepted risks signed off |
+| 8 | `8-adversarial` → red-team corpus + live session (interview) | golden standard met (`make eval-coverage-golden`); zero breaches, or accepted risks signed off |
 
 Phases 7–8 are mandatory for any agent reading enterprise data with tool access.
 Phase 7 builds the defenses; phase 8 assumes they're wrong and tries to break

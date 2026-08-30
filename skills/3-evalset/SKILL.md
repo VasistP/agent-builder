@@ -53,14 +53,43 @@ failures. Rationale and tier/source schema: `references/methodology.md`.
 > conversation. I will not invent expected answers or user turns — that would make
 > the evals meaningless.
 
-Then ask:
+## The golden standard — state it, don't ask it
 
-1. **Target** single-response cases for the full suite (suggest 20–50 for a POC;
-   more for higher-stakes agents — cite `references/eval-standards.md` E11 on
-   sample size). You will write ~30% of that now.
-2. **Target** conversations (suggest 5–15, each 3–8 turns). Same 30% now.
-3. Time budget now vs. split across sessions? (Sets grow incrementally;
+**Do not ask the user how many cases they want.** "What percentage?" is a
+question almost nobody can answer well: it depends on the smallest pass-rate
+move you need to resolve, which is a statistics question, not a product one. Ask
+it and you get a number pulled from the air, and the suite is undersized before
+it exists.
+
+State the standard instead:
+
+| Suite | Golden standard | Due by |
+|-------|----------------|--------|
+| `single_response.jsonl` | **20** cases | phase 8 |
+| `conversations.jsonl` | **5** conversations, 3–8 turns each | phase 8 |
+| `adversarial.jsonl` | **12** — one per attack class, or a waiver | phase 8 |
+| `adversarial_conversations.jsonl` | **3** multi-turn attacks | phase 8 |
+
+20 single-response cases is where a 3-point pass-rate move stops being
+indistinguishable from noise (`references/eval-standards.md` E11). Below it the
+gate reports confidence it does not have, which is worse than no gate.
+
+**In this phase you write the Tier 1 share: 6 single-response cases and 2
+conversations.** The rest is harvested from real traces in phases 5–6, which is
+the point of tiered EDD — spending the user's scarcest resource on imagined
+failure modes anchors the suite. `make eval-coverage` shows the running count and
+blocks below the Tier 1 milestone.
+
+Say all of this in two sentences, then start writing cases. The standard is
+enforced by `evals/run_evals.py`, not by goodwill; lowering it is a Tier B
+override (`evals.coverage_floor`).
+
+Then ask only:
+
+1. Time budget now vs. split across sessions? (Sets grow incrementally;
    `run_evals.py` picks up whatever is in the files.)
+2. Which capabilities from the spec matter most — that drives *which* cases, now
+   that *how many* is settled.
 
 ## Judge setup
 
@@ -126,6 +155,9 @@ Wire it as a CI gate (`ci/eval.yml`) and a pre-commit hook: evals run on every
 change to agent code.
 
 ## Checkpoint
+
+Verify with `make eval-coverage` — it must clear the Tier 1 milestone (6 / 2)
+before this phase can be approved.
 
 Checkpoint block. Verify: `make eval` runs against the current agent (or a stub
 and reports N/A pre-skeleton), files exist and are separate, judge runs locally.

@@ -5,7 +5,8 @@ PKG := agent_pkg
 .PHONY: help setup lint test test-unit test-regression test-integration \
         eval obs-up obs-down functions-index smoke context-budget context-rotate \
         arch-snapshot arch-snapshot-commit arch-history route \
-        integrations integrations-enable adversarial adversarial-fast
+        integrations integrations-enable adversarial adversarial-fast \
+        eval-coverage eval-coverage-golden
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-20s %s\n", $$1, $$2}'
@@ -60,6 +61,12 @@ route: ## Which model tier should a task use?  make route T="find the parser"
 functions-index: ## Regenerate FUNCTIONS.md from src/ docstrings
 	uv run python tools/functions_index.py --write
 	@git diff --exit-code FUNCTIONS.md >/dev/null || (echo "FUNCTIONS.md updated — review & commit"; true)
+
+eval-coverage: ## Check the eval suite against the golden standard (no tokens)
+	uv run python -m evals.run_evals --check-coverage
+
+eval-coverage-golden: ## The phase 8 gate: full golden standard, blocking
+	uv run python -m evals.run_evals --check-coverage --stage golden
 
 eval: ## Run the eval suite (local Ollama judge by default)
 	uv run python -m evals.run_evals

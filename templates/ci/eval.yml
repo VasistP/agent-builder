@@ -31,6 +31,11 @@ jobs:
       - uses: astral-sh/setup-uv@v3
       - run: uv sync --extra dev --extra evals
       - run: curl -sf http://localhost:11434/api/pull -d '{"name":"llama3.1:8b"}'
+      # Zero tokens, and it runs first: a suite below the golden standard
+      # reports a confident pass rate over too few cases, which is worse than
+      # no gate at all. Lower it via skills/override, not by editing this step.
+      - name: Eval coverage vs the golden standard
+        run: uv run python -m evals.run_evals --check-coverage
       - name: Adversarial subset (fast — any breach fails)
         run: uv run python -m evals.run_evals --only adversarial --fast
       - name: Run eval suite (fails on regression vs baseline)
@@ -60,5 +65,7 @@ jobs:
       - uses: astral-sh/setup-uv@v3
       - run: uv sync --extra dev --extra evals
       - run: curl -sf http://localhost:11434/api/pull -d '{"name":"llama3.1:8b"}'
+      - name: Golden-standard gate (all 12 attack classes covered or waived)
+        run: uv run python -m evals.run_evals --check-coverage --stage golden
       - name: Full adversarial suite
         run: uv run python -m evals.run_evals --only adversarial

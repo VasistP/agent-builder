@@ -6,8 +6,9 @@ description: >-
   or wants to add/audit evaluations, observability or security on an existing
   agentic codebase. Walks through discovery, scaffolding, observability, eval
   test-set creation, deterministic testing, an agent skeleton, an eval-gated
-  feature loop, and security hardening. Evals and observability are
-  non-negotiable.
+  feature loop, and security hardening. Runs as a rigorous interview by
+  default — questions and consensus first, documents afterwards. Evals and
+  observability are non-negotiable.
 ---
 
 # agent-builder
@@ -36,6 +37,35 @@ human checkpoint between every phase**.
    noise band aren't signal; the gate is pass^k. → `references/eval-standards.md`
 9. **API keys need explicit permission.** Judge defaults to local Ollama; warn
    that a hosted judge costs money per run.
+10. **Interview first, document second.** Never write a spec/plan/eval set and
+   ask the user to review it. Ask questions in small batches, reach an explicit
+   consensus check, *then* write the file.
+   → `references/interview-protocol.md`
+
+## Interaction mode — interview by default
+
+**Default: `interview`.** Every phase extracts its decisions by asking the user
+questions, 2–4 at a time, and closes with a consensus check the user must accept
+before anything is written to disk. Writing a markdown document first and asking
+"does this look right?" is **not permitted in this mode** — people skim documents
+and nuance is lost exactly where it costs the most.
+
+The full rules, the consensus-check block, and the per-phase interview gates are
+in `references/interview-protocol.md`. Read it before running any phase.
+
+`document` mode (write a proposal, user reviews it) exists and is legitimate, but
+it is a **Tier B override**: `override interaction.interview_mode`. Impatience,
+terse answers, or "just do it" are not overrides — they mean ask fewer, better
+questions.
+
+## Session opener — print this first
+
+Before phase 0, or any standalone/targeted run, print the **"Good to know"**
+orientation block verbatim from `references/interview-protocol.md` § *Session
+opener*: how the session runs, the defaults already locked, what `skills/override`
+can change and at what ceremony, and what is out of scope. Skip it only if
+`.agentbuilder/` already exists — then summarize current mode and active
+overrides instead.
 
 ## Scope — and what this deliberately does not do
 
@@ -99,6 +129,11 @@ and a single breach fails the build.
 
 ## Checkpoint protocol
 
+Two gates per phase, and they are not the same thing. The **consensus check**
+comes first — before anything is written — and confirms you understood the user
+(`references/interview-protocol.md`). The **checkpoint** comes last and confirms
+the work is acceptable. Never collapse them into one.
+
 End every phase with exactly this, then update `.agentbuilder/progress.md` and
 stop:
 
@@ -141,6 +176,7 @@ Anything uncatalogued is unvetted; adding it is a Tier B override.
 | tool catalogue, compaction, multi-agent | `tool-design.md` |
 | choosing a framework | `stack-options.md` |
 | MCP vetting + companion skills | `mcp-catalogue.md` |
+| how to run any phase's interview | `interview-protocol.md` |
 | any override request | `override-registry.md` |
 
 Standards docs carry a "Last reviewed" date. In `audit` mode, check for newer

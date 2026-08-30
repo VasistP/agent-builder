@@ -14,6 +14,33 @@ agent logic is written**, and a research-grounded rubric for both.
 - **audit** — score an existing eval / observability setup against the standards
   docs and return a prioritized gap list.
 
+## How it runs: an interview, not a document review
+
+By default every phase is a **rigorous interview**. The agent asks you questions
+in small batches, pushes back on vague answers, and reads back a numbered
+consensus check that you must accept — *before* it writes a spec, an eval set or
+a threat model to disk. Artifacts are records of what was agreed, never proposals
+you are asked to skim.
+
+This is deliberate. The failure mode it prevents is the common one: an agent
+writes a plausible markdown plan, you skim it, say "looks good", and every
+nuance it guessed at is silently locked in — surfacing three phases later as
+evals encoding the wrong ground truth.
+
+Document-first mode still exists (useful for CI, batch scaffolds, or a repeat
+run against a near-identical spec), but it is a deliberate **Tier B override**:
+
+```
+override interaction.interview_mode
+```
+
+Rules, the consensus-check block, and the per-phase interview gates:
+[`references/interview-protocol.md`](references/interview-protocol.md).
+
+Every run opens with a **"Good to know"** block: how the session will run, which
+defaults are already locked for you, which of them you can change and at what
+ceremony, and what is explicitly out of scope.
+
 ## Layout
 
 | Path | Purpose |
@@ -22,6 +49,7 @@ agent logic is written**, and a research-grounded rubric for both.
 | `skills/0-discovery` … `skills/8-adversarial` | the phase sub-skills, each independently invocable (`build` / `add` / `audit`) |
 | `skills/capabilities` | what the framework can do and what you can invoke — see [CAPABILITIES.md](CAPABILITIES.md), generated from live repo state |
 | `skills/override` | the **only** way to change any default — assesses the specific repo, warns, offers alternatives, records a ledger |
+| `references/interview-protocol.md` | the mandatory interview style: how to ask, the consensus check, per-phase interview gates, how to turn it off |
 | `references/override-registry.md` | every overridable item, its tier, blast radius, and assessment heuristics |
 | `references/methodology.md` | TDD for deterministic code + tiered EDD for model behavior; the per-feature ordering |
 | `references/context-and-cost.md` | the context files (AGENTS.md, ARCHITECTURE/CHANGELOG/TODO) and model-tier routing that stop agents burning tokens re-deriving context |
@@ -35,6 +63,122 @@ agent logic is written**, and a research-grounded rubric for both.
 | `references/mcp-catalogue.md` | mandatory MCP vetting standard (tool poisoning, pinning) + the curated server set and companion skills |
 | `references/stack-options.md`, `references/observability-options.md` | decision guides |
 | `templates/` | the project skeleton `skills/1-scaffold` copies into the target repo |
+
+## Installing it in your coding agent
+
+The framework is plain markdown — `SKILL.md` orchestrates, `skills/*/SKILL.md`
+are the phases, `references/*.md` are the rubrics. Any agent that can read files
+can run it. The only difference between tools is *how you point the agent at
+`SKILL.md`*.
+
+Clone it once:
+
+```bash
+git clone https://github.com/<you>/agent-builder.git ~/agent-builder
+```
+
+### Claude Code
+
+Skills are auto-discovered from a skills directory. Symlink or copy the repo in:
+
+```bash
+mkdir -p ~/.claude/skills
+ln -s ~/agent-builder ~/.claude/skills/agent-builder      # personal, all projects
+# or, per project:
+mkdir -p .claude/skills && ln -s ~/agent-builder .claude/skills/agent-builder
+```
+
+Then just ask — `"build me an agent"`, `"set up evals for this repo"`,
+`"what can agent-builder do?"` — or invoke it directly with `/agent-builder`.
+Sub-skills are separately invocable (`agent-builder-3-evalset`,
+`agent-builder-override`, `agent-builder-capabilities`).
+
+### Codex CLI
+
+Codex reads `AGENTS.md`. Add a pointer at the top of your project's `AGENTS.md`
+(create one if absent):
+
+```markdown
+## agent-builder
+
+When asked to build, evaluate, observe, secure or red-team an AI agent, read
+`~/agent-builder/SKILL.md` and follow it. It is interview-first: ask questions
+in small batches and reach a consensus check before writing any file. Phase
+sub-skills are in `~/agent-builder/skills/<phase>/SKILL.md`, rubrics in
+`~/agent-builder/references/`.
+```
+
+For all projects, put the same block in `~/.codex/AGENTS.md`. Codex has no skill
+loader — it simply reads the files, which is all this framework needs.
+
+### Cursor
+
+```bash
+mkdir -p .cursor/rules
+cat > .cursor/rules/agent-builder.mdc <<'RULE'
+---
+description: agent-builder — interview-first framework for building AI agents
+alwaysApply: false
+---
+When building, evaluating, observing, securing or red-teaming an AI agent, read
+`~/agent-builder/SKILL.md` and follow it exactly. Interview style is mandatory:
+questions in small batches, consensus check before any file is written.
+RULE
+```
+
+Leave `alwaysApply: false` and reference it with `@agent-builder` when you want
+it, so it does not sit in context for unrelated work.
+
+### Gemini CLI
+
+Gemini reads `GEMINI.md` from the project root (and `~/.gemini/GEMINI.md`
+globally). Add the same pointer block as the Codex instructions above.
+
+### GitHub Copilot (VS Code / JetBrains)
+
+Add the pointer block to `.github/copilot-instructions.md`, or as a scoped
+instruction file:
+
+```bash
+mkdir -p .github/instructions
+# .github/instructions/agent-builder.instructions.md, with front-matter:
+#   ---
+#   applyTo: "**"
+#   ---
+```
+
+### Windsurf
+
+```bash
+mkdir -p .windsurf/rules
+# .windsurf/rules/agent-builder.md — same pointer block, trigger: model_decision
+```
+
+### Aider
+
+Pass the orchestrator in read-only so it never gets edited:
+
+```bash
+aider --read ~/agent-builder/SKILL.md --read ~/agent-builder/references/interview-protocol.md
+```
+
+### Cline / Roo / Continue / opencode / anything else
+
+All of these read a project rules file (`.clinerules`, `.roo/rules/`,
+`.continue/rules/`, `AGENTS.md`). Drop in the same pointer block. If your tool
+has no rules mechanism at all, paste this into the chat once per session:
+
+> Read `~/agent-builder/SKILL.md` and follow it for this task. Interview me
+> phase by phase — small batches of questions, a consensus check before you
+> write anything, and a checkpoint I have to approve between phases.
+
+### Verifying the install
+
+Ask the agent *"what can agent-builder do?"*. A correct install answers from
+[`CAPABILITIES.md`](CAPABILITIES.md) — every phase, entry paths, CLI tools, make
+targets — and a correct **run** opens with the "Good to know" block and its first
+question, not with a drafted document.
+
 
 ## Scope
 

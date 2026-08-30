@@ -11,6 +11,11 @@ description: >-
 Goal: add one backlog feature safely. Never batch features; never merge without
 a human checkpoint and an eval run.
 
+**Interview first** — mandatory unless `interaction.interview_mode` is
+overridden. Ask about the feature's acceptance criteria and the eval delta you
+expect, before any code. Small batches, then a consensus check the user accepts
+*before* you write or generate anything. → `references/interview-protocol.md`
+
 ## Steps
 
 Order matters — see `references/methodology.md`. Both kinds of test are written

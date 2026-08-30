@@ -13,6 +13,12 @@ Goal: every agent run emits structured telemetry following the OpenTelemetry
 GenAI semantic conventions, is viewable on a dashboard, and is exportable as
 portable JSON so the tool can be swapped later.
 
+**Interview first** — mandatory unless `interaction.interview_mode` is
+overridden. Ask about the observability tool, whether to capture prompt/response
+content (PII), and retention. Small batches, then a consensus check the user
+accepts *before* you write or generate anything. →
+`references/interview-protocol.md`
+
 Read `references/observability-standards.md` first — it is the rubric.
 
 **Locked** — defaults here can only change via `skills/override`; refuse and point there.

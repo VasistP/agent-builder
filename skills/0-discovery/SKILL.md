@@ -1,9 +1,10 @@
 ---
 name: agent-builder-0-discovery
 description: >-
-  Phase 0 of agent-builder. Interview the user about the agent they want to
-  build and write a structured spec to .agentbuilder/spec.md. Use at the start
-  of a greenfield agent project.
+  Phase 0 of agent-builder. Rigorously interview the user about the agent they
+  want to build — questions in small batches, consensus before anything is
+  written — then record the agreed spec in .agentbuilder/spec.md. Use at the
+  start of a greenfield agent project.
 ---
 
 # Phase 0 — Discovery
@@ -17,10 +18,26 @@ agent. Do not write any code in this phase.
 - If `.agentbuilder/spec.md` already exists, read it and offer to revise rather
   than overwrite.
 
+## This phase is an interview, not a document
+
+**Do not draft `spec.md` and ask the user to check it.** That is the one thing
+this phase must not do — a skimmed document locks in guesses that phase 3 then
+encodes as ground truth. Read `references/interview-protocol.md` before you
+start; it is binding here.
+
+Also print the session opener from the root `SKILL.md` first, so the user knows
+the interaction style, which defaults are already locked, and what
+`skills/override` can change.
+
+Only `interaction.interview_mode` (Tier B override) permits the document-first
+flow. Short answers, impatience, or "you decide" do not.
+
 ## Interview
 
-Ask these in small batches (2–4 at a time), not all at once. Record answers as
-you go. Push back on vague answers — ask for concrete examples.
+Ask these in small batches (2–4 at a time), **never as a list**. Record answers
+as you go and let each answer reshape the next question. Push back on vague
+answers — ask for the number, the table name, the actual example. Anything the
+user genuinely does not know becomes a recorded assumption, not an invention.
 
 ### 1. Purpose & scope
 - One sentence: what does the agent do for whom?
@@ -85,6 +102,21 @@ it. See `references/security-standards.md`.
 - List the features to build after the skeleton, roughly ordered. Each becomes
   one iteration of `skills/6-feature`.
 
+## Consensus check — before writing anything
+
+When the interview is done, issue the consensus check block from
+`references/interview-protocol.md`: a numbered read-back of every decision, the
+assumptions you made where the user didn't specify, and what is still open. Wait
+for `agreed`.
+
+Be explicit about the two conclusions that are easiest to nod through and most
+expensive to get wrong: the **agent-vs-workflow verdict** (§1b) and the
+**trifecta verdict** (§3b). State each in one plain sentence and ask the user to
+confirm it directly.
+
+`.agentbuilder/spec.md` is written *after* `agreed`. It is a record of the
+conversation, not a proposal.
+
 ## Output: `.agentbuilder/spec.md`
 
 Use this template:
@@ -141,5 +173,7 @@ the user.
 
 ## Checkpoint
 
-Print the checkpoint block (see root `SKILL.md`). The user must read
+Print the checkpoint block (see root `SKILL.md`). This is a second, separate
+gate from the consensus check: consensus was "did I understand you", the
+checkpoint is "is the written spec acceptable". The user must read
 `.agentbuilder/spec.md` and reply `approved`.

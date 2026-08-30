@@ -14,6 +14,12 @@ Goal: the agent still behaves correctly when its input is hostile. Read
 `references/security-standards.md` first — it is the rubric, mapped to the OWASP
 Top 10 for Agentic Applications (2026).
 
+**Interview first** — mandatory unless `interaction.interview_mode` is
+overridden. Ask about the trifecta verdict, which tools are genuinely
+side-effecting, and who approves what. Small batches, then a consensus check the
+user accepts *before* you write or generate anything. →
+`references/interview-protocol.md`
+
 Runs after the skeleton (phase 5) and before or alongside the feature loop. For
 an agent with **no tools and no external data**, this phase is light. For
 anything reading enterprise data with tool access — the profile this framework

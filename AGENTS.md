@@ -37,6 +37,7 @@ markdown: **read the file directly.**
 | run the whole pipeline | `SKILL.md`, then `skills/<phase>/SKILL.md` in order |
 | do one thing (evals, observability, security) | that phase's `SKILL.md`, `targeted` entry path |
 | review an existing agent | that phase's `SKILL.md`, `audit` entry path |
+| know how to talk to the user during a phase | `references/interview-protocol.md` |
 | change a locked default | `skills/override/SKILL.md` |
 | understand *why* a rule exists | the matching `references/*-standards.md` |
 
@@ -49,6 +50,10 @@ markdown: **read the file directly.**
   `tools/capabilities.py`; `templates/FUNCTIONS.md` from
   `templates/tools/functions_index.py`. If output looks wrong, fix the source —
   the front-matter description, the docstring, the Makefile help text.
+- **Interview-first is a property of the framework, not a suggestion.** Any new
+  or edited phase must extract its decisions by asking, and reach a consensus
+  check before writing artifacts. Never add a step that drafts a document and
+  asks the user to review it — see `references/interview-protocol.md`.
 - **Don't duplicate across skills.** If two phases need the same explanation, it
   belongs in a reference doc with both pointing at it.
 - **Tools must run under bare `python3`.** Another agent will not have this

@@ -11,6 +11,11 @@ description: >-
 Goal: fast tests that run in CI with **no API key and zero token usage**,
 covering every deterministic (non-LLM) function.
 
+**Interview first** — mandatory unless `interaction.interview_mode` is
+overridden. Ask about which deterministic units matter and what "correct" means
+for each. Small batches, then a consensus check the user accepts *before* you
+write or generate anything. → `references/interview-protocol.md`
+
 Read `references/deterministic-testing.md` first — especially the rule on what
 must NOT be faked.
 

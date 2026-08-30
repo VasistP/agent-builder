@@ -12,6 +12,12 @@ description: >-
 Goal: a runnable, empty project skeleton with all tooling and guardrails in
 place. No agent logic yet.
 
+**Interview first** — mandatory unless `interaction.interview_mode` is
+overridden. Ask about the stack and package name, and which catalogued
+integrations to actually enable. Small batches, then a consensus check the user
+accepts *before* you write or generate anything. →
+`references/interview-protocol.md`
+
 ## Prerequisites / standalone notes
 
 - Needs `.agentbuilder/spec.md` (phase 0). If missing, run discovery first or ask

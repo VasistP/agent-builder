@@ -13,6 +13,12 @@ Goal: two version-controlled test sets that run on every code change:
 `evals/single_response.jsonl` and `evals/conversations.jsonl`, plus a judge
 configuration and `evals/run_evals.py`.
 
+**Interview first** — mandatory unless `interaction.interview_mode` is
+overridden. Ask about every case's ground truth and pass bar — cases are
+co-authored with the user, never invented alone and shown for approval. Small
+batches, then a consensus check the user accepts *before* you write or generate
+anything. → `references/interview-protocol.md`
+
 Read `references/eval-standards.md` (the rubric) and
 `references/eval-authoring-guide.md` (how to co-write good cases) first.
 

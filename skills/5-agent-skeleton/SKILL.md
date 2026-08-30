@@ -12,6 +12,11 @@ Goal: the smallest possible working agent that exercises the whole environment �
 one real end-to-end call, traced, with a baseline eval run recorded. No backlog
 features yet.
 
+**Interview first** — mandatory unless `interaction.interview_mode` is
+overridden. Ask about the single end-to-end path to prove and its success
+criterion. Small batches, then a consensus check the user accepts *before* you
+write or generate anything. → `references/interview-protocol.md`
+
 ## Prerequisites
 
 Phases 1–4 (skeleton, observability, evals, tests) approved. In `add` mode

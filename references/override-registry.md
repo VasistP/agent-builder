@@ -41,6 +41,7 @@ row as part of the override.
 | `mcp.vetting` | every server vetted + version-pinned | `skills/1-scaffold`, `.mcp.json` | Tool poisoning: hostile instructions in a tool description reach the model with high authority and are never seen by a human. 66% of scanned servers have security findings. Unpinned `npx -y` installs unreviewed code on every launch. |
 | `context.budgets` | 150/300/200/250 lines | `tools/context_budget.py`, CI | Context files grow until they become the token cost they exist to prevent. |
 | `repo.layout` | `templates/` structure | `skills/1-scaffold` | Tooling paths (Makefile, CI, index generator) assume it. Changing it is fine if you update those together. |
+| `interaction.interview_mode` | `interview` — questions in small batches + a consensus check before any artifact is written | root `SKILL.md`, every phase skill, `references/interview-protocol.md` | Phases revert to writing a document and asking "look right?". Users skim; unstated nuance gets locked in as fact, and the first symptom is evals encoding the wrong ground truth several phases later. Cheap to revert, expensive to notice. |
 | `dev.methodology` | TDD (deterministic) + tiered EDD (model) — `references/methodology.md` | `skills/3-evalset`, `skills/4-testing`, `skills/6-feature` | Changes the order of test/eval/implement within a feature and the Tier 1/Tier 2 eval split. |
 | `evals.tier_split` | ~30% Tier 1 before code, rest harvested | `skills/3-evalset` | Pushing toward 100% Tier 1 spends the user's scarcest resource on imagined failure modes and anchors the suite; pushing toward 0% means nothing gates the first build. |
 
@@ -107,6 +108,19 @@ Effectively always **STRONG DISADVANTAGE**. The stated motivation is usually "I
 want faster feedback on agent logic" — the narrower alternative is to split the
 function so the deterministic pre/post-processing is testable, which gets them
 the fast feedback without the false coverage. Offer that first.
+
+### `interaction.interview_mode` → `document`
+
+| Signal | Verdict |
+|--------|---------|
+| Non-interactive run (CI, batch scaffold, headless agent) — nobody is there to answer | **ADVANTAGE** — an interview with no human is just a stall; document mode plus an explicit review step is correct |
+| Repeat user who has run this framework before on a near-identical agent, and can point at the prior `spec.md` | **NEUTRAL** — offer the narrower alternative: interview only the deltas from the prior spec |
+| Greenfield agent, first run, enterprise data in scope | **STRONG DISADVANTAGE** — this is exactly the case the interview exists for; the ground truth for phase 3 comes from nowhere else |
+| Stated motivation is speed or impatience | **DISADVANTAGE** — the interview is ~10 minutes; re-deriving a wrong spec after phase 3 is days. Offer the narrower alternative: fewer, sharper questions and a shorter consensus check |
+
+Narrower alternative to offer first, in almost every case: keep the interview for
+phases 0, 3, 7 and 8 (where only a human holds the answer) and allow document-first
+for 1, 2, 4 and 5 (where the framework's defaults are usually right).
 
 ### `docs.docstring_enforcement` → off
 

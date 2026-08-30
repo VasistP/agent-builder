@@ -44,7 +44,7 @@ override.
 | Tier | Covers | Ceremony |
 |------|--------|----------|
 | **A — Protected** | the non-negotiables: evals, observability, portable trace export, eval CI gate, phase checkpoints | full protocol + typed confirmation phrase + expiry required by default |
-| **B — Structural** | phase order/skipping, repo layout, docstring enforcement, index drift check, no-model-call guard, the deterministic-testing rule | full protocol + explicit `override` confirmation |
+| **B — Structural** | phase order/skipping, repo layout, docstring enforcement, index drift check, no-model-call guard, the deterministic-testing rule, **the interview interaction mode** | full protocol + explicit `override` confirmation |
 | **C — Configuration** | stack/framework, judge provider+model, observability tool, data stores, thresholds, budgets, case counts, MCP set, dashboard panels | short protocol (assessment + one confirmation), no expiry needed |
 
 ### Step 2 — Assess *this* repo
@@ -106,6 +106,24 @@ let them decide — this skill informs, it does not veto.
 3. Tier A/B: comment at the code site so the next reader knows it was deliberate —
    `# OVERRIDE: evals CI gate disabled — see .agentbuilder/overrides.md 2026-08-29`
 4. Time-boxed: note the expiry; remind the user at the first checkpoint after it lapses.
+
+## The interview mode override
+
+`interaction.interview_mode` → `document` is the most commonly requested Tier B
+override, and the one most often requested for the wrong reason. Before assessing
+it, establish *why*:
+
+- **Nobody is there to answer** (CI, batch, headless) → legitimate; document mode
+  is the correct flow. Approve after the normal protocol.
+- **Prior spec exists for a near-identical agent** → offer interviewing only the
+  deltas instead of dropping the interview.
+- **"It's faster" / "just do it"** → the interview costs ~10 minutes; a wrong spec
+  costs days from phase 3 onward. Offer sharper, fewer questions first.
+
+Never treat terse answers or visible impatience during an interview as an
+override. If the user has not said the word, the interview continues.
+
+→ `references/interview-protocol.md`
 
 ## Reverting
 

@@ -22,7 +22,7 @@ codebase — you do not have to have used this framework to build it.
 
 | # | Skill | Entry paths | What it does |
 |---|-------|-------------|--------------|
-| 0 | `0-discovery` | build | Interview the user about the agent they want to build and write a structured spec to .agentbuilder/spec.md. |
+| 0 | `0-discovery` | build | Rigorously interview the user about the agent they want to build — questions in small batches, consensus before anything is writt… |
 | 1 | `1-scaffold` | build | Create the project skeleton, dev tooling, docstring enforcement, the FUNCTIONS.md index and fn_search CLI, the agent context file… |
 | 2 | `2-observability` | build, add, audit | Set up open-source agent observability chosen by agent type, always with a portable OpenTelemetry-GenAI JSON trace export, plus a… |
 | 3 | `3-evalset` | build, add, audit | Co-author evaluation test sets with the user — separate single-response and conversation sets stored as JSONL — with mixed determ… |
@@ -113,6 +113,7 @@ degrades the step rather than skipping it.
 | `references/deterministic-testing.md` | Deterministic testing philosophy |
 | `references/eval-authoring-guide.md` | Eval authoring guide |
 | `references/eval-standards.md` | Evaluation standards (build + audit rubric) |
+| `references/interview-protocol.md` | Interview protocol |
 | `references/mcp-catalogue.md` | MCP servers and companion skills |
 | `references/methodology.md` | Development methodology: TDD for deterministic code, tiered EDD for model behavior |
 | `references/observability-options.md` | Observability tool options (open-source only) |

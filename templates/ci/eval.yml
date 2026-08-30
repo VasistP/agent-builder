@@ -7,6 +7,10 @@ on:
       - "src/**"
       - "evals/**"
       - "pyproject.toml"
+  schedule:
+    # Full adversarial suite nightly. New attack classes emerge over time, so a
+    # suite that only ever runs on PRs ages badly.
+    - cron: "0 3 * * *"
 
 jobs:
   evals:
@@ -27,6 +31,8 @@ jobs:
       - uses: astral-sh/setup-uv@v3
       - run: uv sync --extra dev --extra evals
       - run: curl -sf http://localhost:11434/api/pull -d '{"name":"llama3.1:8b"}'
+      - name: Adversarial subset (fast — any breach fails)
+        run: uv run python -m evals.run_evals --only adversarial --fast
       - name: Run eval suite (fails on regression vs baseline)
         run: uv run python -m evals.run_evals
       - uses: actions/upload-artifact@v4
@@ -34,3 +40,25 @@ jobs:
         with:
           name: eval-results
           path: evals/results/
+
+  adversarial-full:
+    # Full red-team suite: nightly, and on any change to tools, prompts or
+    # security code — the surfaces where a regression actually opens a hole.
+    if: github.event_name == 'schedule' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    services:
+      ollama:
+        image: ollama/ollama:latest
+        ports: ["11434:11434"]
+    env:
+      EVAL_JUDGE_PROVIDER: ollama
+      EVAL_JUDGE_MODEL: llama3.1:8b
+      OLLAMA_HOST: http://localhost:11434
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv sync --extra dev --extra evals
+      - run: curl -sf http://localhost:11434/api/pull -d '{"name":"llama3.1:8b"}'
+      - name: Full adversarial suite
+        run: uv run python -m evals.run_evals --only adversarial

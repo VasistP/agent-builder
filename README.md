@@ -19,12 +19,13 @@ agent logic is written**, and a research-grounded rubric for both.
 | Path | Purpose |
 |------|---------|
 | `SKILL.md` | orchestrator: modes, non-negotiables, checkpoint protocol |
-| `skills/0-discovery` … `skills/7-security` | the phase sub-skills, each independently invocable (`build` / `add` / `audit`) |
+| `skills/0-discovery` … `skills/8-adversarial` | the phase sub-skills, each independently invocable (`build` / `add` / `audit`) |
 | `skills/override` | the **only** way to change any default — assesses the specific repo, warns, offers alternatives, records a ledger |
 | `references/override-registry.md` | every overridable item, its tier, blast radius, and assessment heuristics |
 | `references/methodology.md` | TDD for deterministic code + tiered EDD for model behavior; the per-feature ordering |
 | `references/context-and-cost.md` | the context files (AGENTS.md, ARCHITECTURE/CHANGELOG/TODO) and model-tier routing that stop agents burning tokens re-deriving context |
 | `references/security-standards.md` | OWASP Agentic Top 10 rubric: injection, tool scoping, lethal trifecta, blast radius |
+| `references/adversarial-standards.md` | 12-class red-team attack taxonomy; what counts as a breach |
 | `references/tool-design.md` | tool catalogue design, runtime compaction, MAST multi-agent failure modes |
 | `references/eval-standards.md` | research-grounded eval rubric (build + audit) |
 | `references/observability-standards.md` | research-grounded observability rubric + portable JSON trace schema |

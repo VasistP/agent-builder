@@ -80,6 +80,12 @@ Ask, don't assume:
 Report findings by risk, not by effort. If the honest answer is "a successful
 injection here could exfiltrate the customer table", say exactly that.
 
+## Then hand off to phase 8
+
+This phase builds the controls; `skills/8-adversarial` tests whether they hold.
+Do not treat hardening as verified until the red-team suite has run — an
+untested control is a hypothesis.
+
 ## Checkpoint
 
 Checkpoint block. Verify: trifecta verdict recorded; `make test` green including

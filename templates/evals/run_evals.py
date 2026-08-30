@@ -1,10 +1,17 @@
-"""Run the eval suite: single-response + conversation sets, mixed graders.
+"""Run the eval suite: capability sets plus the adversarial suite.
 
-Runs on every change to agent code (pre-commit + CI). Writes a results file and
-a trend row the observability dashboard reads. Prints overall + per-tag pass
-rates and a diff vs the previous run.
+Loads four files — single_response, conversations, adversarial and
+adversarial_conversations — runs each case `--runs` times, and reports pass
+rates with a noise band so a delta is only called a regression when it exceeds
+run-to-run variance.
 
-    python evals/run_evals.py [--only single|conversation] [--tag capability=sql-qa]
+Adversarial cases are gated differently and deliberately: the noise band does
+NOT apply to them. An attack that succeeded even once is a vulnerability, not
+flakiness, so any adversarial breach fails the build outright.
+
+    python evals/run_evals.py                       # everything
+    python evals/run_evals.py --only adversarial    # red-team suite only
+    python evals/run_evals.py --only adversarial --fast   # PR subset
 """
 
 from __future__ import annotations
@@ -273,7 +280,12 @@ def _preflight() -> str | None:
 def main() -> int:
     """Load both eval sets, run them, persist results, and print the summary."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--only", choices=["single", "conversation"])
+    parser.add_argument("--only", choices=["single", "conversation", "adversarial"])
+    parser.add_argument(
+        "--fast",
+        action="store_true",
+        help="adversarial only: run the high-signal subset (cases marked fast)",
+    )
     parser.add_argument(
         "--runs",
         type=int,
@@ -294,8 +306,19 @@ def main() -> int:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     single = _load_jsonl(EVAL_DIR / "single_response.jsonl")
     convos = _load_jsonl(EVAL_DIR / "conversations.jsonl")
+    adv = _load_jsonl(EVAL_DIR / "adversarial.jsonl")
+    adv_convos = _load_jsonl(EVAL_DIR / "adversarial_conversations.jsonl")
 
-    if not single and not convos:
+    if args.only == "adversarial":
+        single, convos = [], []
+    else:
+        adv, adv_convos = [], []
+
+    if args.fast:
+        adv = [c for c in adv if c.get("fast")]
+        adv_convos = [c for c in adv_convos if c.get("fast")]
+
+    if not single and not convos and not adv and not adv_convos:
         print("No eval cases yet. Run skills/3-evalset to create them.")
         return 0
 
@@ -309,6 +332,15 @@ def main() -> int:
     if args.only != "single":
         records += _run_conversations(convos, args.runs)
 
+    adv_records: list[dict] = []
+    if adv:
+        adv_records += _run_single(adv, args.runs)
+    if adv_convos:
+        adv_records += _run_conversations(adv_convos, args.runs)
+    for r in adv_records:
+        r["adversarial"] = True
+    records += adv_records
+
     summary = _summarize(records)
     mix = _tier_mix(records)
     band = _noise_band(records)
@@ -319,7 +351,11 @@ def main() -> int:
         "runs_per_case": args.runs,
         "judge_model": os.getenv("EVAL_JUDGE_MODEL", "unknown"),
         "agent_model": os.getenv("AGENT_MODEL", "unknown"),
-        "counts": {"single": len(single), "conversation": len(convos)},
+        "counts": {
+            "single": len(single),
+            "conversation": len(convos),
+            "adversarial": len(adv) + len(adv_convos),
+        },
         "tier_mix": mix,
         "noise_band": band,
         "consistency": consistency,
@@ -366,6 +402,19 @@ def main() -> int:
             "  ! Suite is still majority Tier 1 — are real failures being "
             "harvested? See references/methodology.md"
         )
+
+    breaches = [r for r in records if r.get("adversarial") and not r["passed"]]
+    if breaches:
+        # A security failure is never a rounding error. The noise band applies to
+        # capability regressions; an attack that succeeded even once is a
+        # vulnerability, so adversarial cases bypass it entirely and use pass^k.
+        print(f"\n  ADVERSARIAL BREACH — {len(breaches)} case(s) the agent failed to resist:")
+        for r in breaches:
+            rate = r.get("pass_rate", 0.0)
+            cls = next((c.get("class") for c in (adv + adv_convos) if c["id"] == r["id"]), "?")
+            print(f"    {r['id']:<34} [{cls}]  held {rate:.0%} of runs")
+        print("  Any breach fails the build regardless of the noise band.")
+        return 1
 
     if regressions:
         print("\n  REGRESSION (beyond noise):")

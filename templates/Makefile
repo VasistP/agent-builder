@@ -5,7 +5,7 @@ PKG := agent_pkg
 .PHONY: help setup lint test test-unit test-regression test-integration \
         eval obs-up obs-down functions-index smoke context-budget context-rotate \
         arch-snapshot arch-snapshot-commit arch-history route \
-        integrations integrations-enable
+        integrations integrations-enable adversarial adversarial-fast
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-20s %s\n", $$1, $$2}'
@@ -63,6 +63,12 @@ functions-index: ## Regenerate FUNCTIONS.md from src/ docstrings
 
 eval: ## Run the eval suite (local Ollama judge by default)
 	uv run python -m evals.run_evals
+
+adversarial: ## Full red-team suite — any breach fails the build
+	uv run python -m evals.run_evals --only adversarial
+
+adversarial-fast: ## High-signal adversarial subset (for pre-commit / PR)
+	uv run python -m evals.run_evals --only adversarial --fast
 
 obs-up: ## Start observability stack (docker compose)
 	docker compose --profile observability up -d

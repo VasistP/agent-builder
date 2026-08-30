@@ -54,8 +54,8 @@ guarantees are currently off.
 
 | Mode | When | What runs |
 |------|------|-----------|
-| **full** | greenfield | phases 0 → 7 in order |
-| **targeted** | "just evals" / "just observability" / "just security" | that sub-skill only, against the existing repo — never re-scaffold, never touch agent logic |
+| **full** | greenfield | phases 0 → 8 in order |
+| **targeted** | "just evals" / "just observability" / "just security" / "red-team it" | that sub-skill only, against the existing repo — never re-scaffold, never touch agent logic |
 | **audit** | "review our existing setup" | sub-skill(s) in `audit` path: score against the matching `*-standards.md`, output prioritized gaps + effort |
 
 Resume from `.agentbuilder/progress.md` if present.
@@ -72,8 +72,12 @@ Resume from `.agentbuilder/progress.md` if present.
 | 5 | `5-agent-skeleton` → minimal agent loop | one traced call; baseline eval |
 | 6 | `6-feature` (repeat) → one feature per run | eval delta + approval |
 | 7 | `7-security` → boundaries, scoping, injection evals | trifecta verdict; a side-effecting tool demonstrably blocked |
+| 8 | `8-adversarial` → red-team corpus + live session | zero breaches, or accepted risks signed off |
 
-Phase 7 is mandatory for any agent reading enterprise data with tool access.
+Phases 7–8 are mandatory for any agent reading enterprise data with tool access.
+Phase 7 builds the defenses; phase 8 assumes they're wrong and tries to break
+them. **An adversarial breach is never noise** — the noise band does not apply,
+and a single breach fails the build.
 
 ## Checkpoint protocol
 
@@ -112,6 +116,7 @@ Anything uncatalogued is unvetted; adding it is a Tier B override.
 | building/auditing evals | `eval-standards.md`, `eval-authoring-guide.md` |
 | building/auditing observability | `observability-standards.md`, `observability-options.md` |
 | building/auditing security | `security-standards.md` |
+| red-teaming | `adversarial-standards.md` |
 | writing tests | `deterministic-testing.md` |
 | ordering test/eval/implement | `methodology.md` |
 | context files + model routing | `context-and-cost.md` |

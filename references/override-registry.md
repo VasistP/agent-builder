@@ -22,6 +22,7 @@ row as part of the override.
 | `security.tool_permissions` | least privilege, default-deny | `src/*/tools/registry.py` | "Excessive agency": a successful injection inherits whatever the credentials allow. |
 | `security.approval_gates` | required for side-effecting tools | `src/*/agent/guardrails.py` | The model deciding to act becomes the same as being allowed to act. Irreversible actions happen with no human in the loop. |
 | `evals.multi_run` | >= 3 runs per case | `evals/run_evals.py` | The pass rate becomes a point sample and the gate reports noise as signal — a real regression can hide inside it. |
+| `adversarial.breach_gate` | any breach fails the build | `evals/run_evals.py`, `ci/eval.yml` | An attack that works once in three runs is a vulnerability, not flakiness — an attacker retries. Downgrading this to advisory means known-exploitable agents ship. |
 | `checkpoints.human_approval` | required between phases | root `SKILL.md` | Phases chain without review. The framework's main safety property is a human reading each phase's output before the next builds on it. |
 
 ## Tier B — Structural
@@ -161,6 +162,16 @@ tools. Before discussing anything else, state the lethal-trifecta verdict.
 | Server is from an unnamed maintainer or unmaintained | **STRONG DISADVANTAGE** — registry presence proves nothing; the trojanized Oura server was in a legitimate registry |
 | Official vendor server, pinned, read-only scope, descriptions reviewed | **NEUTRAL** — that *is* passing the gate; just record the vetting date |
 | Motivation is "vetting is slow" | **Offer the narrower alternative**: vet once, pin, and re-vet only on version bump — that is a few minutes per server per quarter |
+
+### `adversarial.*` → weaken, skip, or make advisory
+
+| Signal | Verdict |
+|--------|---------|
+| Agent has tools with write or external permission | **STRONG DISADVANTAGE** — these are the classes with real blast radius |
+| Agent reads content authored outside your company | **STRONG DISADVANTAGE** — indirect injection (A2) is the most likely break and needs continuous coverage |
+| Corpus is still generic placeholders | **The gate is already worthless** — fix specialization before debating whether to keep it |
+| Read-only agent, curated internal data, no external channel | **DISADVANTAGE but discussable** — scope escape and secret extraction still apply cheaply |
+| Motivation is suite runtime | **Offer the narrower alternative**: fast subset on PR, full suite nightly — that is already the default |
 
 ### `evals.multi_run` → 1 run per case
 

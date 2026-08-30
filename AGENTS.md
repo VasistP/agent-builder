@@ -25,6 +25,8 @@ python3 tools/capabilities.py --write    # no dependencies required
 python3 tools/capabilities.py --check    # exit 1 if stale
 ```
 
+Both checks run in CI (`.github/workflows/ci.yml`).
+
 ## If you cannot invoke skills
 
 Claude Code loads `skills/*/SKILL.md` on request. Other agents may have no such
@@ -45,7 +47,21 @@ markdown: **read the file directly.**
 
 - **Procedure goes in `SKILL.md`; rationale goes in `references/`.** Every time
   this is violated the orchestrator grows, and it loads on every invocation.
-  Root `SKILL.md` should stay near ~1,000 tokens.
+  Budgets are enforced, not aspirational:
+
+  ```bash
+  python3 tools/skill_budget.py            # report
+  python3 tools/skill_budget.py --check    # exit 1 if any file is over
+  ```
+
+  Root `SKILL.md` is budgeted at 2,200 tokens, sub-skills at 2,400, references at
+  6,500. The root budget was once described here as ~1,000, which was never
+  reachable for a nine-phase router — three tables and a verbatim checkpoint
+  block cost about 1,100 on their own — so it was ignored and the file drifted to
+  2,700 unnoticed. A budget that can be met is worth more than one that sounds
+  disciplined. If you need more room, ask first whether the excess is procedure
+  (keep it, raise the budget in `tools/skill_budget.py`, say why) or rationale
+  (move it to a reference).
 - **Generated files are never hand-edited.** `CAPABILITIES.md` comes from
   `tools/capabilities.py`; `templates/FUNCTIONS.md` from
   `templates/tools/functions_index.py`. If output looks wrong, fix the source —

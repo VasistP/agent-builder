@@ -1,0 +1,22 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  docs:
+    # Everything here runs under bare python3 with no dependencies — the same
+    # constraint the tools themselves are held to, so another agent can run
+    # these checks without this repo's environment.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: CAPABILITIES.md is current
+        run: python3 tools/capabilities.py --check
+      - name: Skills and references are inside their context budgets
+        run: python3 tools/skill_budget.py --check

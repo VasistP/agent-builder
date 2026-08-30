@@ -4,7 +4,8 @@ PKG := agent_pkg
 
 .PHONY: help setup lint test test-unit test-regression test-integration \
         eval obs-up obs-down functions-index smoke context-budget context-rotate \
-        arch-snapshot arch-snapshot-commit arch-history route
+        arch-snapshot arch-snapshot-commit arch-history route \
+        integrations integrations-enable
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-20s %s\n", $$1, $$2}'
@@ -46,6 +47,12 @@ arch-snapshot-commit: ## Commit pending ARCHITECTURE.md changes (never pushes)
 
 arch-history: ## List past versions of ARCHITECTURE.md
 	uv run python tools/arch_snapshot.py --history
+
+integrations: ## What optional MCPs/skills are available, and what would they unlock?
+	@uv run python tools/check_integrations.py
+
+integrations-enable: ## Add one catalogued MCP server:  make integrations-enable NAME=context7
+	@uv run python tools/check_integrations.py --enable "$(NAME)"
 
 route: ## Which model tier should a task use?  make route T="find the parser"
 	@uv run python tools/route_task.py "$(T)"

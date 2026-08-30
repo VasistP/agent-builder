@@ -65,7 +65,7 @@ Resume from `.agentbuilder/progress.md` if present.
 | # | Sub-skill | Checkpoint |
 |---|-----------|-----------|
 | 0 | `0-discovery` → `.agentbuilder/spec.md` | user confirms the spec |
-| 1 | `1-scaffold` → skeleton, tooling, context files, `.mcp.json` | `make setup && make test` green |
+| 1 | `1-scaffold` → skeleton, tooling, context files, integration catalogue | `make setup && make test` green |
 | 2 | `2-observability` → spans, dashboard, JSON export | a trace from a smoke call |
 | 3 | `3-evalset` → Tier 1 eval sets, judge | `make eval` runs |
 | 4 | `4-testing` → deterministic suites | green, zero tokens |
@@ -89,14 +89,21 @@ Open risks / decisions: <bullets or "none">
 Reply `approved` to continue to phase <n+1>, or tell me what to change.
 ```
 
-## Compose with existing skills — don't reimplement
+## External skills and MCPs — checked, then installed on demand
 
-`dataviz` before dashboard chart code · `security-review` on the diff in phase 7
-· `code-review` at the feature checkpoint · `claude-api` for model ids and
-`evals/pricing.json` · `mcp-builder` for custom internal servers.
+**Nothing is bundled.** Projects ship a catalogue (`.agent/integrations.yml`) and
+a checker, not a pre-filled `.mcp.json`. Run `make integrations`, show the user
+what each would unlock, and enable only what they ask for — every added server
+widens the supply chain and more tools degrade selection accuracy.
 
-MCP servers must be **vetted and version-pinned** before entering `.mcp.json`;
-adding an unvetted one is a Tier B override. → `references/mcp-catalogue.md`
+Skills are used **if available**, never required: built-ins aren't visible on
+disk, so check your own skill listing and use the manifest's fallback when one is
+missing rather than skipping the step. `dataviz` for dashboard charts,
+`code-review` at the feature checkpoint, `security-review` in phase 7,
+`claude-api` for model ids and pricing, `mcp-builder` for custom internal servers.
+
+Anything uncatalogued is unvetted; adding it is a Tier B override.
+→ `references/mcp-catalogue.md`
 
 ## Reference index — read on demand, not upfront
 

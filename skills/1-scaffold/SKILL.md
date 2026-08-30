@@ -77,18 +77,25 @@ Copy and fill in, per `references/context-and-cost.md`:
 Verify: `make context-budget` passes and `make route T="find the parser"`
 returns `nano`.
 
-### 6. MCP config
-Copy `templates/.mcp.json` — context7, playwright, memory, sequential-thinking,
-**version-pinned**, each with a vetting date.
+### 6. External integrations — on demand, never bundled
+The scaffold ships **no `.mcp.json`**. It ships a catalogue
+(`.agent/integrations.yml`) and a checker.
 
-**Every server must pass the vetting checklist in `references/mcp-catalogue.md`;
-adding an unvetted one is a Tier B override.** Never a bare `npx -y pkg` — that
-installs unreviewed code on every launch. Summarize the risk for the user (tool
-poisoning; 66% of scanned servers have findings) and read that doc for detail.
+1. Run `make integrations`. It reports which MCP servers are configured, which
+   skills are discoverable, and what each would unlock.
+2. Show the user the list and **ask which they want**. Enable only those:
+   `make integrations-enable NAME=context7`. Each write is version-pinned with
+   its vetting line.
+3. Recommend `context7` for most projects; `playwright` only if there is a UI or
+   the agent browses; `memory` only if the build spans sessions.
+4. Anything not in the catalogue is unvetted — adding it is a Tier B override.
+   → `references/mcp-catalogue.md`
+5. **No database MCP here.** Add one only after discovery names stores, with a
+   read-only role, or build a narrow one with `mcp-builder`.
 
-**Database MCP is conditional** — never preinstalled. Once the spec names stores,
-add one matching server with a **read-only role**, or use `mcp-builder` to build a
-narrow one they control.
+Skills are used *if available*. Built-ins aren't visible on disk, so check your
+own skill listing rather than trusting the checker's `?`. When one is missing,
+use the fallback in `.agent/integrations.yml` — never skip the step.
 
 ### 7. Verify
 Run `make setup` then `make test`. The skeleton ships one trivial passing

@@ -55,9 +55,9 @@ simple, build from scratch. Never require an account or API key.
    bodies). Document how to enable full capture in a safe environment.
 5. **Eval scores as telemetry.** `skills/3-evalset` writes eval results back as
    span attributes / a metrics table the dashboard reads.
-6. **Use the `dataviz` skill before writing any chart code.** The dashboard is a
-   data visualization; that skill covers palette, accessibility, light/dark
-   consistency and dashboard layout properly. Do not hand-roll chart styling.
+6. **If the `dataviz` skill is available, use it before writing chart code.**
+   If not, fall back per `.agent/integrations.yml`: one palette, every axis
+   labelled, readable in light and dark, stat row over dense grid.
 7. **Dashboard panels (must-have):** request volume & latency (p50/p95), tokens &
    cost over time, tool-call counts + failure rate, error breakdown, eval score
    trend, trace explorer.

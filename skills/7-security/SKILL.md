@@ -58,12 +58,14 @@ present, break one leg rather than hardening the prompt.
    conversation turns — asserting the agent does **not** follow them. Derive
    these from the user's real data sources; generic examples miss the shapes
    that matter. This is the only evidence a mitigation actually works.
-7. **MCP supply chain (S11).** Vet and pin every entry in `.mcp.json` against
-   the checklist in `references/mcp-catalogue.md`. Read the tool descriptions —
-   poisoning hides there and is invisible in normal use. Confirm no database MCP
-   holds write credentials.
-8. **Run the `security-review` skill** over the diff. It complements this rubric
-   with a real review of the changed code; don't reimplement diff scanning here.
+7. **MCP supply chain (S11).** `make integrations` to see what is actually
+   enabled, then vet each entry in `.mcp.json` against
+   `references/mcp-catalogue.md`. Read the tool descriptions — poisoning hides
+   there and is invisible in normal use. Confirm no database MCP holds write
+   credentials, and that nothing uncatalogued crept in.
+8. **Review the changed code** — via the `security-review` skill if available,
+   otherwise walk the diff against S1–S11 by hand, ranked by exploitability x
+   blast radius.
 9. **Attribution (S10).** Actor identity, target system, and data accessed on
    every action span. Confirm retention meets the compliance window in the spec.
 

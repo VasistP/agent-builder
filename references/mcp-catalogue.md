@@ -3,8 +3,9 @@
 _Last reviewed: 2026-08-29._
 
 Two parts: a **mandatory vetting standard** for any MCP server entering a
-project, and the **curated set** this framework installs. Adding an unvetted
-server is a Tier B override.
+project, and the **curated set** this framework offers. Nothing is installed by
+default — the scaffold ships a catalogue and a checker, and you enable what you
+need. Adding an unvetted server is a Tier B override.
 
 ---
 
@@ -60,9 +61,15 @@ Read it, pin it, and scope the credentials accordingly.
 
 ## The curated set
 
-Installed by `skills/1-scaffold`. Deliberately small — more tools measurably
-*hurt* selection accuracy (see `references/tool-design.md`), and every added
-server widens the supply chain.
+**Nothing here is installed by default.** The scaffold ships no `.mcp.json` — it
+ships `.agent/integrations.yml` (this catalogue, machine-readable) plus
+`tools/check_integrations.py`. Run `make integrations` to see what is present and
+what each would unlock; enable individually with
+`make integrations-enable NAME=<x>`.
+
+Deliberately small: more tools measurably *hurt* selection accuracy (see
+`references/tool-design.md`), and every added server widens the supply chain.
+Enabling on demand keeps both costs proportional to what you actually use.
 
 | MCP | Purpose | Risk notes |
 |-----|---------|-----------|

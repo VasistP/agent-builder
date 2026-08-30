@@ -47,9 +47,10 @@ Order matters — see `references/methodology.md`. Both kinds of test are writte
    `"tier": 2, "source": "trace:<id>"`. Re-run `make eval`.
    **Never close a checkpoint on an unexplained eval failure with no new case
    recorded** — that is the step teams skip, and it's the one that compounds.
-10. **Run the `code-review` skill** on the diff before presenting the checkpoint.
-    Surface anything it finds in "Open risks" rather than silently fixing it —
-    the human is reviewing your judgment, not just your output.
+10. **Review the diff** — via the `code-review` skill if available, otherwise
+    re-read it against the acceptance criteria yourself. Surface findings under
+    "Open risks" rather than silently fixing them; the human is reviewing your
+    judgment, not just your output.
 11. **Checkpoint** — print:
 
 ```

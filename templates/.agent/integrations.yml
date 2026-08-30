@@ -1,0 +1,107 @@
+# Optional external integrations — a CATALOGUE, not an install list.
+#
+# Nothing here is installed by default. `tools/check_integrations.py` reports
+# what is present, what is missing, and what each would unlock; you enable only
+# what you actually need. Two reasons:
+#
+#   1. Every MCP server added widens your supply chain (security S11), and more
+#      tools measurably degrade selection accuracy (references/tool-design.md).
+#   2. A pre-populated .mcp.json installs servers nobody asked for — which is
+#      exactly the subtraction principle this framework preaches elsewhere.
+#
+# `make integrations` to see status. `make integrations-enable NAME=context7`
+# to add one, after reading its vetting line.
+
+version: 1
+
+mcp:
+  context7:
+    enables: Up-to-date library and framework docs, so the agent stops guessing stale APIs.
+    needed_by: [1-scaffold, 5-agent-skeleton, 6-feature]
+    package: "@upstash/context7-mcp"
+    version: "4.0.4"
+    vetted: "2026-08-29"
+    risk: Read-only, no repo access. Lowest-risk of the set.
+    recommend: strong
+
+  playwright:
+    enables: Browser automation — dashboard E2E tests and web-interacting agents.
+    needed_by: [2-observability]
+    package: "@playwright/mcp"
+    version: "0.0.79"
+    vetted: "2026-08-29"
+    risk: Reaches arbitrary URLs; page content is untrusted input (security S1).
+    recommend: if_ui
+    condition: The agent browses the web, or you want automated dashboard tests.
+
+  memory:
+    enables: Cross-session knowledge graph so a new session keeps prior decisions.
+    needed_by: [6-feature]
+    package: "@modelcontextprotocol/server-memory"
+    version: "2026.7.4"
+    vetted: "2026-08-29"
+    risk: >-
+      Persists model-authored content. Do not store untrusted spans verbatim —
+      memory poisoning turns one injection into a persistent compromise (S5).
+    recommend: optional
+    condition: The build spans many sessions and you want decisions to survive.
+
+  sequential-thinking:
+    enables: Structured multi-step reasoning for complex planning.
+    needed_by: [5-agent-skeleton]
+    package: "@modelcontextprotocol/server-sequential-thinking"
+    version: "2026.7.4"
+    vetted: "2026-08-29"
+    risk: No I/O; minimal surface.
+    recommend: optional
+
+  # Database servers are deliberately absent. Add ONE after discovery names your
+  # stores, with a READ-ONLY role, vetted per references/mcp-catalogue.md. A
+  # general-purpose database MCP with write credentials is the largest
+  # excess-agency risk you can hand an enterprise agent. If nothing off-the-shelf
+  # fits, build a narrow one you control with the `mcp-builder` skill.
+
+# Skills the framework will USE IF AVAILABLE. It never requires them: built-in
+# skills are not visible on disk, so a script cannot reliably detect them — the
+# agent checks its own available-skills listing instead. Each carries a fallback
+# so the phase still works when the skill is absent.
+skills:
+  dataviz:
+    enables: Dashboard chart design — palette, accessibility, light/dark, layout.
+    needed_by: [2-observability]
+    fallback: >-
+      Write charts directly. Keep to one palette, label every axis, ensure
+      readability in light and dark, and prefer a stat row over a dense grid.
+
+  code-review:
+    enables: Review the diff at the pre-merge checkpoint.
+    needed_by: [6-feature]
+    fallback: >-
+      Re-read the diff yourself against references/deterministic-testing.md and
+      the feature's acceptance criteria; list concerns under "Open risks".
+
+  security-review:
+    enables: Security review over the changed code in phase 7.
+    needed_by: [7-security]
+    fallback: >-
+      Walk the diff against security-standards.md S1-S11 manually, prioritizing
+      by exploitability x blast radius.
+
+  claude-api:
+    enables: Authoritative model ids, pricing and limits for evals/pricing.json.
+    needed_by: [3-evalset]
+    fallback: >-
+      Look up current pricing from the provider's own docs. Never fill
+      pricing.json from memory — a stale entry silently misreports spend.
+
+  mcp-builder:
+    enables: Build a narrow, purpose-built MCP server for an internal system.
+    needed_by: [1-scaffold]
+    fallback: >-
+      Follow the MCP specification directly; keep the server narrow and
+      read-only, and vet it per references/mcp-catalogue.md before wiring it in.
+
+  skill-creator:
+    enables: Turn team conventions into reusable skills once the POC stabilizes.
+    needed_by: []
+    fallback: Write the SKILL.md by hand — procedure in the body, rationale in references.

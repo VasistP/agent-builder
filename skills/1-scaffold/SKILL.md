@@ -20,10 +20,7 @@ place. No agent logic yet.
   (docstring config, `tools/fn_search.py`, `FUNCTIONS.md`, `.mcp.json`, Makefile
   targets). Report what was skipped.
 
-**Locked.** Repo layout, docstring enforcement, and the index drift check are
-framework defaults — see `references/override-registry.md`. Stack choice is the
-one thing you actively ask about here (Tier C), but changing it *after* scaffold
-goes through `skills/override`.
+**Locked** — defaults here can only change via `skills/override`; refuse and point there. Stack choice is the one thing you actively ask about here.
 
 ## Steps
 
@@ -84,18 +81,14 @@ returns `nano`.
 Copy `templates/.mcp.json` — context7, playwright, memory, sequential-thinking,
 **version-pinned**, each with a vetting date.
 
-**Every server must pass the vetting checklist in `references/mcp-catalogue.md`
-before it is added; adding an unvetted one is a Tier B override.** Explain why to
-the user: 66% of scanned MCP servers have security findings, and tool poisoning —
-malicious instructions in a tool's description, which the model reads and the
-human never sees — is the leading attack on enterprise agents. Never use a bare
-`npx -y pkg`; that installs unreviewed code on every launch.
+**Every server must pass the vetting checklist in `references/mcp-catalogue.md`;
+adding an unvetted one is a Tier B override.** Never a bare `npx -y pkg` — that
+installs unreviewed code on every launch. Summarize the risk for the user (tool
+poisoning; 66% of scanned servers have findings) and read that doc for detail.
 
-**Database MCP is conditional.** Do not preinstall one. Once the spec names
-concrete stores, add a *single* matching server with a **read-only role**. A
-general-purpose database MCP holding write credentials is the largest
-excess-agency risk available. If nothing fits the user's internal systems,
-recommend the `mcp-builder` skill to build a narrow one they control.
+**Database MCP is conditional** — never preinstalled. Once the spec names stores,
+add one matching server with a **read-only role**, or use `mcp-builder` to build a
+narrow one they control.
 
 ### 7. Verify
 Run `make setup` then `make test`. The skeleton ships one trivial passing

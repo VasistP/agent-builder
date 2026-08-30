@@ -16,10 +16,7 @@ configuration and `evals/run_evals.py`.
 Read `references/eval-standards.md` (the rubric) and
 `references/eval-authoring-guide.md` (how to co-write good cases) first.
 
-**Locked.** If the user asks to skip evals, drop the CI gate, lower the pass
-threshold, or change the judge/case-count defaults, refuse and point them at
-`skills/override`. Don't argue the merits here and don't treat the request as
-consent — that assessment is the override skill's job.
+**Locked** — defaults here can only change via `skills/override`; refuse and point there.
 
 ## Entry paths
 
@@ -32,24 +29,15 @@ consent — that assessment is the override skill's job.
   refreshed? sample size adequate? safety/grounding covered?). Check context7 /
   web for newer practice. Output prioritized gaps + effort. No changes unless asked.
 
-## Tiered EDD — what to write now vs. later
+## Write Tier 1 only (~30% of the target suite)
 
-Per `references/methodology.md`, do **not** try to author the whole corpus before
-the agent exists. In this phase you write **Tier 1 only** — roughly 30% of the
-target suite, derived from things you genuinely know from `.agentbuilder/spec.md`:
+Derive from `.agentbuilder/spec.md`: example requests → happy path; out-of-scope
+→ refusals; feared failure modes → negative cases; constraints → latency/step
+budgets; data sources → tool-selection and groundedness.
 
-| Spec section | Tier 1 cases to derive |
-|---|---|
-| Example requests | happy-path task-completion |
-| Out of scope | refusal |
-| Feared failure modes | negative cases |
-| Constraints | latency / step-budget |
-| Data sources | tool-selection, groundedness |
-
-The other ~70% (Tier 2) gets harvested from real traces in phase 5 and each
-phase 6 feature. Every case carries `"tier"` and `"source"`. Explain this split
-to the user so they understand why you're stopping at 30% — it isn't laziness,
-it's avoiding an anchored suite aimed at imagined failures.
+The other ~70% (Tier 2) is harvested from real traces in phases 5 and 6. Tell the
+user why you're stopping at 30% — it avoids anchoring the suite on imagined
+failures. Rationale and tier/source schema: `references/methodology.md`.
 
 ## Before you start — warn the user
 

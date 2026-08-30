@@ -49,30 +49,21 @@ override.
 
 ### Step 2 — Assess *this* repo
 
-Gather signals before saying anything about advantage or disadvantage:
+Gather signals first: `spec.md` (agent type, compliance), `src/**/tools/` (how
+many, is selection non-trivial), `evals/*.jsonl` + `evals/results/` (coverage,
+and whether the suite has **ever caught a regression** — the strongest argument
+against weakening it), `logs/traces/` (real traffic?), CI (is the gate live?),
+and `.agentbuilder/overrides.md` (are they **stacking**? three small ones can add
+up to no safety net — call that out).
 
-- `.agentbuilder/spec.md` → agent type, compliance constraints, success criteria,
-  feared failure modes.
-- `src/**/tools/` → how many tools; is tool selection non-trivial?
-- `evals/*.jsonl` → how many cases; are they passing; do they cover the thing
-  being overridden?
-- `logs/traces/` → is there real traffic; are traces actually being read?
-- `evals/results/` → has the eval suite ever caught a regression? (If yes, that
-  is the strongest possible argument against weakening it.)
-- CI config → is the gate live; does anything else catch this class of bug?
-- `.agentbuilder/overrides.md` → are they stacking overrides? Three small ones
-  can add up to "no safety net", and that compounding must be called out.
-
-Then produce a verdict using the heuristics in
-`references/override-registry.md` § *Assessment heuristics*. Be specific and
-quantitative where you can — "your 214-case suite would cost roughly $6 per CI
-run at Haiku rates, ~$180/month at your current PR volume" beats "this may be
-expensive".
+Verdict per `references/override-registry.md` § *Assessment heuristics*. Be
+quantitative: "your 214-case suite costs ~$6/CI run at Haiku rates, ~$180/month
+at your PR volume" beats "this may be expensive".
 
 ### Step 3 — Present the decision
 
-Output exactly this block. Do not soften a disadvantage, and do not manufacture a
-disadvantage that doesn't apply to their repo.
+Output exactly this. Don't soften a real disadvantage or manufacture one that
+doesn't apply here.
 
 ```
 ### Override request: <item>  (Tier <A|B|C>)
@@ -98,33 +89,23 @@ Scope: one-time | time-boxed (expires <date>) | permanent
 Revert: <exact command / edit to undo this>
 ```
 
-Then ask for confirmation:
+Then confirm:
 
-- **Tier A** — require the user to type: `override <item> — I accept <the single
-  worst consequence>`. Nothing else counts as consent. Default to proposing a
-  time-boxed override with an expiry date; permanent Tier A overrides need a
-  second explicit confirmation.
-- **Tier B** — require the word `override`.
-- **Tier C** — a plain yes is fine.
+- **Tier A** — user must type `override <item> — I accept <worst consequence>`.
+  Nothing else counts. Propose a time-boxed expiry by default; permanent needs a
+  second confirmation.
+- **Tier B** — the word `override`. **Tier C** — a plain yes.
 
-If the verdict is **STRONG DISADVANTAGE**, say so plainly before the
-confirmation prompt and state that you recommend against it. Then still let them
-decide — this skill informs, it does not veto.
+On **STRONG DISADVANTAGE**, say you recommend against it before prompting. Then
+let them decide — this skill informs, it does not veto.
 
 ### Step 4 — Apply and record
 
 1. Make the change.
-2. Append to `.agentbuilder/overrides.md` (create from the template if absent):
-
-```
-| Date | Item | Tier | From → To | Scope/Expiry | Verdict | Accepted consequence | Revert |
-```
-
-3. If Tier A or B, add a comment at the code/config site pointing to the ledger
-   row, so the next reader knows it was deliberate:
+2. Append a row to `.agentbuilder/overrides.md`.
+3. Tier A/B: comment at the code site so the next reader knows it was deliberate —
    `# OVERRIDE: evals CI gate disabled — see .agentbuilder/overrides.md 2026-08-29`
-4. If time-boxed, note the expiry in the ledger and remind the user at the next
-   checkpoint after it lapses.
+4. Time-boxed: note the expiry; remind the user at the first checkpoint after it lapses.
 
 ## Reverting
 

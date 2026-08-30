@@ -14,20 +14,10 @@ covering every deterministic (non-LLM) function.
 Read `references/deterministic-testing.md` first — especially the rule on what
 must NOT be faked.
 
-**Locked.** The no-fake-model-calls rule and the no-network guard cannot be
-relaxed from here. If the user wants either changed, point them at
-`skills/override`.
+**Locked** — defaults here can only change via `skills/override`; refuse and point there.
 
-## Test-first is mandatory here
-
-Deterministic code is the one layer where the test-first premise fully holds —
-you know the correct output before writing the function. So `references/methodology.md`
-mandates **strict TDD** on this side of the line: write the test, watch it fail,
-then implement. A test authored after the implementation tends to encode what the
-code does rather than what it should do.
-
-(The model-behavior side is deliberately *not* strict test-first — see the tiered
-EDD rules in the same doc.)
+**Strict TDD here**: write the test, watch it fail, then implement. This is the
+one layer where the test-first premise fully holds. → `references/methodology.md`
 
 ## The rule
 

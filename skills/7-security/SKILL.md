@@ -30,19 +30,11 @@ targets — it is mandatory.
 
 ## Start here: the lethal trifecta
 
-Before anything else, establish whether the agent has all three of:
-
-1. **Private data** — anything the user should not be able to exfiltrate.
-2. **Untrusted input** — retrieved rows, documents, tickets, web content, or any
-   text the agent did not author.
-3. **An external communication channel** — email, HTTP, webhooks, writes to a
-   shared system.
-
-Any two are usually manageable. **All three means a successful injection can
-exfiltrate.** State the verdict plainly to the user before discussing anything
-else, and record it in `.agentbuilder/spec.md`. If all three are present, the
-strongest available mitigation is removing or allowlisting the third leg, not
-hardening the prompt.
+Establish whether the agent has **private data + untrusted input + an external
+channel**. All three means a successful injection can exfiltrate. State the
+verdict plainly *before* discussing anything else and record it in the spec; if
+present, break one leg rather than hardening the prompt.
+→ `references/security-standards.md`
 
 ## Work, in order
 

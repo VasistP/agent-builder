@@ -15,10 +15,7 @@ portable JSON so the tool can be swapped later.
 
 Read `references/observability-standards.md` first — it is the rubric.
 
-**Locked.** If the user asks to skip observability, drop the JSON trace export,
-or change any default in `references/override-registry.md`, refuse and point them
-at `skills/override`. Don't argue the merits here and don't treat the request as
-consent — that assessment is the override skill's job.
+**Locked** — defaults here can only change via `skills/override`; refuse and point there.
 
 ## Entry paths
 

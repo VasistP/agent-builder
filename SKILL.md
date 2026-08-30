@@ -35,7 +35,15 @@ agent logic is written, then drives feature work through an eval-gated loop with
    `docs/CHANGELOG.md` and `docs/TODO.md` (append-only, rotated), plus model-tier
    routing. These exist to stop agents burning the token budget re-deriving
    context every session. See `references/context-and-cost.md`.
-6. **API keys need explicit permission.** The eval judge defaults to a local
+6. **Security is not optional for data/tool agents.** Any agent reading
+   enterprise data while holding tool access gets `skills/7-security`: untrusted
+   content boundaries, least-privilege tools, approval gates on side effects, and
+   injection eval cases. OWASP ranks prompt injection #1, found in over 73% of
+   audited systems. See `references/security-standards.md`.
+7. **Evals measure reliability, not one sample.** Every case runs 3+ times;
+   deltas inside the reported noise band are not treated as signal, and the merge
+   gate uses pass^k (every run passed), not pass@k.
+8. **API keys need explicit permission.** The eval judge defaults to a local
    Ollama model. Only use a hosted model after asking; if the user picks a large
    paid model, warn that every eval run costs money.
 
@@ -63,8 +71,8 @@ every run — it tells you which guarantees are currently switched off.
 | Mode | When | What runs |
 |------|------|-----------|
 | **full** | greenfield project | phases 0 → 6 in order |
-| **targeted** | "just set up evals", "just observability", "evals + observability" | jump straight to `skills/2-observability` and/or `skills/3-evalset` (and `skills/4-testing` if asked) against the existing repo — never re-scaffold, never touch agent logic |
-| **audit** | "review our existing eval / observability setup" | run the relevant sub-skill(s) in `audit` entry path: score the current setup against `references/eval-standards.md` / `references/observability-standards.md`, output a prioritized gap list with rough effort |
+| **targeted** | "just set up evals", "just observability", "just security" | jump straight to `skills/2-observability`, `skills/3-evalset`, `skills/4-testing` and/or `skills/7-security` against the existing repo — never re-scaffold, never touch agent logic |
+| **audit** | "review our existing eval / observability / security setup" | run the relevant sub-skill(s) in `audit` entry path: score the current setup against `references/eval-standards.md`, `references/observability-standards.md` and `references/security-standards.md`, output a prioritized gap list with rough effort |
 | **override** | "skip evals", "change the judge model", "we don't want checkpoints" | hand off to `skills/override` — the only skill permitted to change a default |
 
 Detect a resumable run from `.agentbuilder/progress.md`. If it exists, offer to
@@ -81,6 +89,10 @@ resume from the last unapproved phase.
 | 4 | `skills/4-testing` | deterministic unit/regression/integration suites | suites green, zero tokens used |
 | 5 | `skills/5-agent-skeleton` | minimal agent loop + regenerated `FUNCTIONS.md` | one real end-to-end call traced; baseline eval recorded |
 | 6 | `skills/6-feature` (repeat) | one feature per run | eval delta shown + human approval before merge |
+| 7 | `skills/7-security` | untrusted boundaries, tool scoping, approval gates, injection evals | trifecta verdict recorded; a side-effecting tool is demonstrably blocked |
+
+Phase 7 runs after the skeleton and alongside the feature loop. For any agent
+reading enterprise data with tool access it is **mandatory**, not optional.
 
 ## Checkpoint protocol
 
@@ -100,8 +112,8 @@ not invoke the next sub-skill until the user replies `approved`.
 
 ## Standards are research-grounded
 
-`references/eval-standards.md` and `references/observability-standards.md` are the
-rubric for both building and auditing. Each carries a "Last reviewed" date and a
+`references/eval-standards.md`, `references/observability-standards.md` and
+`references/security-standards.md` are the rubric for both building and auditing. Each carries a "Last reviewed" date and a
 "Sources" list. In `audit` mode, also check context7 / the web for newer guidance
 and flag drift rather than trusting the doc blindly.
 

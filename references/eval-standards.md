@@ -112,6 +112,29 @@ Scoring an existing setup: mark each item `pass` / `partial` / `fail` /
   documented and the user consented; suite runtime is tracked.
 - **Fix:** move judge local; split fast (pre-commit) vs full (CI/nightly) tiers.
 
+## E15. Pass rates are measured across repeated runs, with variance reported
+- **Why:** the agent *and* the LLM judge are both non-deterministic. A pass rate
+  from a single run per case is a point sample; the delta against the previous
+  run is partly noise, and a real regression can hide inside it. As one
+  practitioner put it: *"a 97% pass rate was 97% ± something I had never
+  measured, and that something was big enough to hide a regression."*
+- **Verify:** `--runs` is >= 3 in CI; results record `runs_per_case`, a noise
+  band, and per-case `pass_rate`; the report suppresses deltas inside the band
+  rather than presenting them as movement.
+- **Fix:** raise `--runs`; pin temperature and seed where the provider allows;
+  design graders to accept semantic equivalence rather than byte-exact match.
+
+## E16. Consistency is measured, not just capability
+- **Why:** pass@k (succeeded at least once) flatters an unreliable agent. For
+  mission-critical behavior the relevant metric is **pass^k** — succeeded in
+  *every* attempt. An agent that works two times in three is broken, not 67%
+  working.
+- **Verify:** the report shows pass^k alongside pass@k and counts flaky cases
+  (passed sometimes, failed sometimes). The merge gate uses pass^k.
+- **Fix:** treat every flaky case as a defect with a root cause, not a rounding
+  error. Flakiness usually indicates an underspecified prompt, an ambiguous
+  tool description, or a grader that is itself non-deterministic.
+
 ---
 
 ## Sources
@@ -125,3 +148,6 @@ Scoring an existing setup: mark each item `pass` / `partial` / `fail` /
   Feedback.*
 - arXiv 2507.11277 — *Taming Uncertainty via Automation: Observing, Analyzing,
   and Optimizing Agentic AI Systems.*
+- arXiv 2507.21504 — *Evaluation and Benchmarking of LLM Agents: A Survey*
+  (pass@k vs pass^k, consistency under repeated runs).
+- τ-bench — pass^k as the consistency metric for mission-critical deployments.

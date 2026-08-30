@@ -30,6 +30,13 @@ Single-shot | Conversational | Both — <notes>
 - Compliance: ...
 - Approved models: ... (local required? yes/no)
 
+## Architecture verdict
+Workflow | Workflow + agentic step | Agent — rationale: ...
+
+## Security posture
+Private data: yes/no · Untrusted input: yes/no · External channel: yes/no
+Lethal trifecta present: yes/no — mitigation: ...
+
 ## Agent type (drives observability + eval defaults)
 <single-shot Q&A | RAG | tool/workflow | multi-agent | conversational assistant>
 Rationale: ...

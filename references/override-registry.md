@@ -18,6 +18,10 @@ row as part of the override.
 | `evals.judge_alignment` | required | `evals/judge_alignment.md` | Scores measure the judge, not the agent. Pass-rate movements become uninterpretable. |
 | `observability.enabled` | on | `skills/2-observability` | No traces. Debugging becomes print statements and guesswork; tool-selection and looping failures are effectively invisible. |
 | `observability.json_export` | always on | `src/*/observability/exporter.py` | Vendor lock-in. This export is the migration path; removing it is the one thing that is genuinely hard to undo later. |
+| `security.untrusted_boundaries` | on for any agent with external content | `skills/7-security`, `src/*/security/` | Retrieved content is read as instructions. This is OWASP #1 and the most likely way an enterprise-data agent gets used against its owner. |
+| `security.tool_permissions` | least privilege, default-deny | `src/*/tools/registry.py` | "Excessive agency": a successful injection inherits whatever the credentials allow. |
+| `security.approval_gates` | required for side-effecting tools | `src/*/agent/guardrails.py` | The model deciding to act becomes the same as being allowed to act. Irreversible actions happen with no human in the loop. |
+| `evals.multi_run` | >= 3 runs per case | `evals/run_evals.py` | The pass rate becomes a point sample and the gate reports noise as signal — a real regression can hide inside it. |
 | `checkpoints.human_approval` | required between phases | root `SKILL.md` | Phases chain without review. The framework's main safety property is a human reading each phase's output before the next builds on it. |
 
 ## Tier B — Structural
@@ -45,6 +49,9 @@ row as part of the override.
 | `stack.framework` | Python 3.12 + LangGraph | Genuinely free choice; often mandated by the company. Low risk. |
 | `evals.judge_provider` / `judge_model` | `ollama` / `llama3.1:8b` | Switching to hosted costs money per run — always quantify it. |
 | `evals.case_counts` | 20–50 single, 5–15 conversations | Below ~20 the pass rate is too noisy to gate on (see `eval-standards.md` E11). |
+| `evals.runs_per_case` | 3 | Raising it tightens the noise band; dropping below 3 is Tier A, not C — see `evals.multi_run`. |
+| `guardrails.budgets` | steps/cost/time/breaker per `Budgets` | Raise per the spec rather than disabling. Removing them entirely is Tier B: they bound blast radius. |
+| `tools.catalogue_size` | audited at ~15 | Advisory warning, not a hard block. Overlap matters more than count. |
 | `evals.pass_threshold` | no-regression vs baseline | Loosening this is the quiet way to disable the gate; treat a threshold drop >10pts as Tier B. |
 | `observability.tool` | by agent type | Free choice among OSS options. JSON export stays on regardless (Tier A). |
 | `observability.capture_content` | `false` | Turning on captures prompts/responses — compliance implications; check `spec.md` for PII/regulatory constraints first. |
@@ -131,6 +138,26 @@ the fast feedback without the false coverage. Offer that first.
 | Team uses one model for everything and is cost-constrained | **STRONG DISADVANTAGE** — routing is the cheapest available saving |
 | Team is on a flat-rate plan with no metering | **NEUTRAL** — the saving is latency, not money |
 | Policy is producing wrong tiers and annoying people | **Fix the rules, don't remove routing** — tier match patterns are Tier C and easy to tune |
+
+### `security.*` → weaken or remove
+
+Effectively always **STRONG DISADVANTAGE** for an agent with data access and
+tools. Before discussing anything else, state the lethal-trifecta verdict.
+
+| Signal | Verdict |
+|--------|---------|
+| Agent has private data + untrusted input + an external channel | **STRONG DISADVANTAGE** — a successful injection can exfiltrate; this is the case the controls exist for |
+| Agent has tools with write or external permission | **STRONG DISADVANTAGE** — excessive agency is its own OWASP category |
+| Read-only agent, no external channel, curated internal data only | **DISADVANTAGE but discussable** — the untrusted-content boundary still costs almost nothing to keep |
+| Motivation is "approval gates are annoying in dev" | **Offer the narrower alternative**: keep the gate, wire an auto-approver in the dev environment only, and require the real approver in staging and production |
+
+### `evals.multi_run` → 1 run per case
+
+| Signal | Verdict |
+|--------|---------|
+| Used as a merge gate | **STRONG DISADVANTAGE** — a single run cannot distinguish a regression from sampling noise, so the gate becomes theater |
+| Used as a fast local smoke check, full suite still runs in CI | **NEUTRAL** — this is the intended split; `--runs 1` already prints a warning |
+| Motivation is eval runtime or cost | **Offer the narrower alternative**: fast tier with 1 run on pre-commit, full multi-run suite in CI or nightly |
 
 ### `stack.framework` → change
 

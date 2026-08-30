@@ -6,8 +6,27 @@ Run `make functions-index` after changing any function.
 | Location | Signature | Summary |
 | --- | --- | --- |
 | `src/agent_pkg/__main__.py:10` | `def main()` | Run a single request from the command line and print the response. |
+| `src/agent_pkg/agent/checkpoint.py:54` | `def idempotency_key(run_id, tool_name, arguments)` | Return a stable key identifying one side-effecting call. |
+| `src/agent_pkg/agent/checkpoint.py:98` | `def run_once_idempotent(checkpoint, tool_name, arguments, action)` | Execute a side-effecting action at most once per run, even across replays. |
+| `src/agent_pkg/agent/checkpoint.py:70` | `def __init__(self, directory)` | (no docstring) |
+| `src/agent_pkg/agent/checkpoint.py:73` | `def _path(self, run_id)` | (no docstring) |
+| `src/agent_pkg/agent/checkpoint.py:77` | `def save(self, checkpoint)` | Persist a checkpoint, replacing any earlier one for the same run. |
+| `src/agent_pkg/agent/checkpoint.py:85` | `def load(self, run_id)` | Return the stored checkpoint for `run_id`, or None if there is none. |
+| `src/agent_pkg/agent/checkpoint.py:93` | `def delete(self, run_id)` | Remove a run's checkpoint once it has completed successfully. |
+| `src/agent_pkg/agent/compaction.py:56` | `def estimate_tokens(messages)` | Roughly estimate token count from character length (~4 chars/token). |
+| `src/agent_pkg/agent/compaction.py:65` | `def should_compact(messages, policy)` | Return True if the conversation has grown past the compaction trigger. |
+| `src/agent_pkg/agent/compaction.py:70` | `def select_for_compaction(messages, policy)` | Split messages into (head_kept, to_summarize, tail_kept). |
+| `src/agent_pkg/agent/compaction.py:90` | `def assemble_compacted(head, summary, tail)` | Rebuild the conversation from kept turns plus the generated summary. |
 | `src/agent_pkg/agent/graph.py:16` | `def render_prompt(state)` | Render the transcript into a single prompt string (deterministic). |
 | `src/agent_pkg/agent/graph.py:26` | `def step(state)` | Advance the agent by one step: maybe call a tool, then get a reply. |
+| `src/agent_pkg/agent/guardrails.py:140` | `def require_approval(tool_name, arguments)` | Gate a side-effecting action behind a human decision (security S3). |
+| `src/agent_pkg/agent/guardrails.py:33` | `def __init__(self, tool_name, arguments, reason)` | (no docstring) |
+| `src/agent_pkg/agent/guardrails.py:73` | `def start(self)` | Mark the beginning of the run for wall-clock budgeting. |
+| `src/agent_pkg/agent/guardrails.py:77` | `def elapsed(self)` | Seconds since `start`, or 0.0 if the run has not started. |
+| `src/agent_pkg/agent/guardrails.py:81` | `def on_step(self)` | Count one reasoning step; trip if over the step or time budget. |
+| `src/agent_pkg/agent/guardrails.py:91` | `def on_tool_call(self, tool_name)` | Record a tool invocation and its outcome; trip on budget or breaker. |
+| `src/agent_pkg/agent/guardrails.py:121` | `def add_cost(self, cost_usd)` | Add model cost to the run and trip if it exceeds the budget. |
+| `src/agent_pkg/agent/guardrails.py:129` | `def _check_clock(self)` | (no docstring) |
 | `src/agent_pkg/agent/model.py:23` | `def complete(prompt)` | Return the model completion for `prompt`, emitting an OTel GenAI span. |
 | `src/agent_pkg/agent/run.py:16` | `def run_once(request)` | Handle a single request and return the final response. |
 | `src/agent_pkg/agent/run.py:32` | `def chat(turns)` | Run a sequence of user turns in one conversation, returning a Response per turn. |
@@ -28,9 +47,15 @@ Run `make functions-index` after changing any function.
 | `src/agent_pkg/observability/tracing.py:108` | `def pop_usage()` | Return and clear the last recorded LLM usage frame. |
 | `src/agent_pkg/pricing.py:13` | `def _table()` | Load and cache the per-million-token rate table from evals/pricing.json. |
 | `src/agent_pkg/pricing.py:21` | `def cost_usd(model, input_tokens, output_tokens)` | Return USD cost for a call, using per-million-token rates in pricing.json. |
-| `src/agent_pkg/tools/registry.py:39` | `def tool(name, description, parameters)` | Decorator registering `func` as a callable tool. |
-| `src/agent_pkg/tools/registry.py:58` | `def dispatch(name, arguments)` | Invoke a registered tool by name and return its string result. |
-| `src/agent_pkg/tools/registry.py:65` | `def specs()` | Return all registered tool specs (for building the model tool list). |
-| `src/agent_pkg/tools/registry.py:73` | `def is_tool_request(text)` | Detect an explicit `/toolname args` request in user text (deterministic). |
-| `src/agent_pkg/tools/registry.py:90` | `def _echo(text)` | Return `text` unchanged. |
-| `src/agent_pkg/tools/registry.py:50` | `def wrap(func)` | Register `func` and return it unchanged. |
+| `src/agent_pkg/security/permissions.py:35` | `def check_permission(tool_name, required, granted)` | Raise `PermissionDenied` unless `required` is in `granted`. |
+| `src/agent_pkg/security/permissions.py:60` | `def describe_grants(granted)` | Return a human-readable summary of a grant set, for traces and audits. |
+| `src/agent_pkg/security/permissions.py:67` | `def has_lethal_trifecta()` | Return True if this agent combines private data, untrusted input, and egress. |
+| `src/agent_pkg/security/untrusted.py:60` | `def strip_forgery(text)` | Neutralize fence and role-header lookalikes inside untrusted content. |
+| `src/agent_pkg/security/untrusted.py:65` | `def wrap_untrusted(content, provenance)` | Return `content` fenced and labelled as untrusted data. |
+| `src/agent_pkg/tools/registry.py:49` | `def tool(name, description, parameters)` | Decorator registering `func` as a callable tool. |
+| `src/agent_pkg/tools/registry.py:68` | `def dispatch(name, arguments)` | Invoke a registered tool by name, enforcing permissions first. |
+| `src/agent_pkg/tools/registry.py:94` | `def audit_tools()` | Return warnings about the tool catalogue's design quality. |
+| `src/agent_pkg/tools/registry.py:139` | `def specs()` | Return all registered tool specs (for building the model tool list). |
+| `src/agent_pkg/tools/registry.py:147` | `def is_tool_request(text)` | Detect an explicit `/toolname args` request in user text (deterministic). |
+| `src/agent_pkg/tools/registry.py:164` | `def _echo(text)` | Return `text` unchanged. |
+| `src/agent_pkg/tools/registry.py:60` | `def wrap(func)` | Register `func` and return it unchanged. |

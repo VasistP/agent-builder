@@ -28,6 +28,24 @@ you go. Push back on vague answers — ask for concrete examples.
 - 3 things it must explicitly *not* do (out of scope).
 - Single-shot (one request → one answer) or conversational (multi-turn)? Both?
 
+### 1b. Is an agent even the right architecture?
+
+Ask this before anything else, and be willing to talk the user out of an agent.
+The most reliable production systems separate orchestrated **workflows** from
+autonomous **agents**, and use the latter only when the task genuinely requires
+open-ended reasoning.
+
+- Can you write down the steps in advance? → a **workflow** with an LLM in one or
+  two nodes is cheaper, faster, testable, and far more reliable.
+- Does the path genuinely branch on content the model must interpret, in ways you
+  cannot enumerate? → an **agent** is justified.
+- Somewhere between? → a workflow with one agentic step, not a fully autonomous
+  agent.
+
+Record the verdict and the reasoning in the spec. If a workflow suffices, say so
+plainly — building an agent where a pipeline would do is the most expensive
+mistake available at this stage, and it is made before any code exists.
+
 ### 2. Users & interface
 - Who uses it (role, technical level, internal/external)?
 - Interface: API, chat UI, Slack, CLI, embedded in another app?
@@ -38,6 +56,14 @@ you go. Push back on vague answers — ask for concrete examples.
 - For each: access method, auth, PII/sensitivity, size, update frequency.
 - Does it write anywhere or take actions with side effects? List them.
 - Retrieval needed (vector search)? Structured query (SQL)? Both?
+
+### 3b. Security posture — the lethal trifecta
+
+Establish whether the agent will have all three of: private data, untrusted input
+(any content it did not author — retrieved rows, documents, tickets, web pages),
+and an external communication channel. All three together mean a successful
+prompt injection can exfiltrate. Record the verdict; `skills/7-security` acts on
+it. See `references/security-standards.md`.
 
 ### 4. Constraints
 - Mandated framework / language / cloud (many enterprises fix this)? If yes, what?

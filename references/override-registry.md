@@ -118,9 +118,18 @@ the fast feedback without the false coverage. Offer that first.
 | Greenfield agent, first run, enterprise data in scope | **STRONG DISADVANTAGE** — this is exactly the case the interview exists for; the ground truth for phase 3 comes from nowhere else |
 | Stated motivation is speed or impatience | **DISADVANTAGE** — the interview is ~10 minutes; re-deriving a wrong spec after phase 3 is days. Offer the narrower alternative: fewer, sharper questions and a shorter consensus check |
 
-Narrower alternative to offer first, in almost every case: keep the interview for
-phases 0, 3, 7 and 8 (where only a human holds the answer) and allow document-first
-for 1, 2, 4 and 5 (where the framework's defaults are usually right).
+Narrower alternative to offer first, in almost every case: a **partial** override
+rather than a blanket one. Every phase interviews by default; if the user insists
+on dropping it, drop it only where the framework can supply a defensible starting
+point.
+
+| Phase | Keep the interview? | Why |
+|-------|--------------------|-----|
+| 0 discovery, 3 evalset, 6 feature, 7 security, 8 adversarial | **yes** | the answer exists only in the user's head — purpose, a case's ground truth, a feature's acceptance criteria, which tools really have side effects, what counts as a breach here. A guess becomes the ground truth everything downstream is measured against |
+| 1 scaffold, 2 observability, 4 testing, 5 skeleton | droppable | the framework already has a defensible default, so a written proposal has the user *correcting* a sane starting point rather than supplying missing facts |
+
+Record a partial override as `interaction.interview_mode = document (phases 1,2,4,5)`
+in the ledger, not as a blanket `document`.
 
 ### `docs.docstring_enforcement` → off
 

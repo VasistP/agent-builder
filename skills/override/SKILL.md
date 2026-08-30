@@ -120,6 +120,10 @@ it, establish *why*:
 - **"It's faster" / "just do it"** → the interview costs ~10 minutes; a wrong spec
   costs days from phase 3 onward. Offer sharper, fewer questions first.
 
+Offer the **partial** split before a blanket override: interview kept for phases
+0, 3, 6, 7 and 8 (human-only answers), document-first for 1, 2, 4 and 5 (the
+framework has a defensible default there). Record it that way in the ledger.
+
 Never treat terse answers or visible impatience during an interview as an
 override. If the user has not said the word, the interview continues.
 

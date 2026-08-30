@@ -176,6 +176,12 @@ Document-first mode still requires the phase checkpoints; it drops only the
 question-by-question extraction and the consensus check, replacing them with a
 written proposal the user is explicitly asked to read closely.
 
+Prefer a **partial** override to a blanket one. Phases 0, 3, 6, 7 and 8 hold the
+questions only a human can answer; phases 1, 2, 4 and 5 have defensible framework
+defaults, so a proposal there gives the user something to correct rather than a
+blank to fill. `skills/override` offers that split by default — see
+`override-registry.md` § `interaction.interview_mode`.
+
 Never turn it off because the user seems impatient, gives short answers, or says
 "just do it". That is a signal to ask fewer and better questions, not to stop
 asking. Only an explicit override counts.

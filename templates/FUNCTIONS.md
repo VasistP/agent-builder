@@ -31,7 +31,7 @@ Run `make functions-index` after changing any function.
 | `src/agent_pkg/agent/run.py:16` | `def run_once(request)` | Handle a single request and return the final response. |
 | `src/agent_pkg/agent/run.py:32` | `def chat(turns)` | Run a sequence of user turns in one conversation, returning a Response per turn. |
 | `src/agent_pkg/agent/run.py:43` | `def _to_response(state)` | Build a `Response` from the final assistant message and tool history. |
-| `src/agent_pkg/agent/state.py:30` | `def add(self, role, content, tool_name)` | Append a message to the running transcript. |
+| `src/agent_pkg/agent/state.py:38` | `def add(self, role, content, tool_name, tool_args, tool_error)` | Append a message to the running transcript. |
 | `src/agent_pkg/data/__init__.py:19` | `def health(self)` | Return True if the store is reachable and ready. |
 | `src/agent_pkg/data/__init__.py:23` | `def query(self, request)` | Execute a read against the store and return raw results. |
 | `src/agent_pkg/observability/exporter.py:21` | `def _trace_dir()` | Return the trace log directory from $TRACE_LOG_DIR, creating it if needed. |

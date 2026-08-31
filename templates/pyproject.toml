@@ -20,9 +20,12 @@ dev = [
     "pytest-cov>=5",
     "ruff>=0.6",
     "mypy>=1.11",
+    # graders/deterministic.py validates json_schema cases for real; the grader
+    # module is imported by the deterministic test suite too.
+    "jsonschema>=4.23",
 ]
 dashboard = ["streamlit>=1.37", "pandas>=2.2"]
-evals = ["ollama>=0.3"]
+evals = ["ollama>=0.3", "jsonschema>=4.23"]
 
 [project.scripts]
 agent-pkg = "agent_pkg.__main__:main"

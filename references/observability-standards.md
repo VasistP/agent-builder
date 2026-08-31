@@ -8,6 +8,31 @@ check context7 / the web for newer OTel GenAI guidance and note drift.
 
 ---
 
+## What the shipped exporter is, and is not
+
+The scaffold's exporter writes spans whose **attribute names** follow the
+OpenTelemetry GenAI semantic conventions (`gen_ai.*`) as portable JSONL, and
+posts a JSON body to an OTLP-style endpoint. It is **not** a conformant OTLP
+exporter: it builds span dictionaries itself rather than going through the
+OpenTelemetry SDK, and it sends synchronously.
+
+Say this plainly to the user rather than implying drop-in OTel interoperability:
+
+- The **JSON export is the portability guarantee** — a stable, documented,
+  vendor-neutral record you can replay into any backend. That is real and is
+  what the Tier A non-negotiable protects.
+- **Wire-level OTLP compatibility is not guaranteed.** For a real collector,
+  swap in `opentelemetry-sdk`'s `BatchSpanProcessor` + `OTLPSpanExporter` (both
+  already dependencies) and keep the JSON exporter alongside it.
+- **Synchronous export costs request latency.** Batch it before any load
+  testing, and before production under any definition.
+- The GenAI conventions are still marked **Development** upstream, so **pin the
+  schema version** you emit (`schema_url`) and expect attribute renames. Do not
+  present them as stable.
+
+Recording an inaccurate claim here is worse than a missing feature: someone
+plans a backend migration around interoperability that was never tested.
+
 ## O1. OpenTelemetry GenAI semantic conventions are the schema
 - **Why:** a standard schema keeps telemetry consistent across frameworks and
   lets you switch backends without re-instrumenting. Don't invent a custom format.

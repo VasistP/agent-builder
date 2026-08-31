@@ -65,14 +65,21 @@ State the standard instead:
 
 | Suite | Golden standard | Due by |
 |-------|----------------|--------|
-| `single_response.jsonl` | **20** cases | phase 8 |
+| `single_response.jsonl` | **20** cases, ≥5 per capability slice | phase 8 |
 | `conversations.jsonl` | **5** conversations, 3–8 turns each | phase 8 |
 | `adversarial.jsonl` | **12** — one per attack class, or a waiver | phase 8 |
 | `adversarial_conversations.jsonl` | **3** multi-turn attacks | phase 8 |
 
-20 single-response cases is where a 3-point pass-rate move stops being
-indistinguishable from noise (`references/eval-standards.md` E11). Below it the
-gate reports confidence it does not have, which is worse than no gate.
+These are **coverage floors, not statistical power**. 20 cases answers "has
+every capability been exercised at all?" — it does not make a 3-point pass-rate
+move meaningful (at n=20 the 95% margin of error is ±22 points). Say that to the
+user plainly if they ask what the number buys them: the suite's job at this size
+is to catch gross regressions and name the specific case that broke, not to
+measure small improvements. → `references/eval-standards.md` E11
+
+Spread the cases across capabilities rather than piling them on the happy path.
+A capability with 2 cases cannot fail informatively; aim for **≥5 per capability
+slice** you care about, and let the total land wherever that puts it.
 
 **In this phase you write the Tier 1 share: 6 single-response cases and 2
 conversations.** The rest is harvested from real traces in phases 5–6, which is

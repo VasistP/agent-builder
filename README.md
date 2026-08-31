@@ -1,14 +1,14 @@
 # agent-builder
 
-An interactive, checkpoint-gated **skill** for standing up a production-grade
-enterprise AI-agent POC — with **evaluation and observability wired in before any
+An interactive, checkpoint-gated **skill** for standing up a rigorously
+evaluated enterprise AI-agent POC — with **evaluation and observability wired in before any
 agent logic is written**, and a research-grounded rubric for both.
 
 ## What it is
 
 `SKILL.md` is the orchestrator. It runs in one of three modes:
 
-- **full** — greenfield: phases 0→6, a mandatory human checkpoint between each.
+- **full** — greenfield: phases 0→8, a mandatory human checkpoint between each.
 - **targeted** — "just set up evals" / "just observability" on an existing agent
   codebase, without re-scaffolding or touching agent logic.
 - **audit** — score an existing eval / observability setup against the standards
@@ -210,9 +210,8 @@ half-implementing them.
 ## The golden standard for eval suites
 
 "How many test cases is enough?" is a question most developers have no basis to
-answer — it depends on the smallest pass-rate move you need to resolve, which is
-statistics, not product sense. Ask it in a prompt and you get a number pulled
-from the air. So the framework **states** the standard instead:
+answer, so asking it in a prompt yields a number pulled from the air. The
+framework **states** a floor instead:
 
 | Suite | Required |
 |-------|----------|
@@ -220,6 +219,13 @@ from the air. So the framework **states** the standard instead:
 | conversations | **5**, 3–8 turns each |
 | adversarial | **12** — one per attack class, or a written waiver |
 | multi-turn adversarial | **3** |
+
+These are **coverage floors, not statistical power.** They answer "has every
+capability and attack class been exercised at all?" At n=20 the 95% margin of
+error on a pass rate is ±22 points, so the suite is built to catch gross
+regressions and name the case that broke — not to justify "we improved 3%".
+Release gating needs hundreds to thousands of cases; the framework says so
+rather than implying 20 is enough.
 
 Phase 3 writes the Tier 1 share (6 and 2); phases 5–6 harvest the rest from real
 traces. **Phase 8 is the hard gate** — `make eval-coverage-golden` runs in zero
@@ -243,8 +249,11 @@ says plainly that you never lower a floor to turn a red build green.
    by evals only.
    Deterministic code is built strict-TDD; model behavior uses tiered EDD
    (~30% spec-derived cases up front, the rest harvested from real traces).
-3. Observability always writes portable OTel-GenAI-shaped JSON traces
-   (`logs/traces/*.jsonl`) — no vendor lock-in.
+3. Observability always writes portable OTel-GenAI-*shaped* JSON traces
+   (`logs/traces/*.jsonl`) — no vendor lock-in. This is a stable, replayable
+   record, **not** a conformant OTLP exporter: for a real collector, add the
+   OpenTelemetry SDK's batch processor and OTLP exporter alongside it.
+   → `references/observability-standards.md`
 4. Human checkpoint between every phase.
 5. Eval judge defaults to a local Ollama model; hosted judges need explicit
    permission and a cost warning.
@@ -254,6 +263,14 @@ says plainly that you never lower a floor to turn a red build green.
    from source every session.
 
 ## The template in `templates/`
+
+**The template is Python + LangGraph + Anthropic by default, and that default
+is wired deeper than one config line.** The eval preflight, model shim and
+`.env` keys are provider-aware (`AGENT_MODEL_PROVIDER` selects which key is
+required, and `ollama`/`local` needs no key at all), but porting to TypeScript
+or another framework means rewriting `tools/`, the Makefile and the graders —
+budget real work for it, not a paragraph. The *methodology* is portable; the
+scaffold is not yet.
 
 Python 3.12 + LangGraph skeleton with: OTel-GenAI instrumentation + JSON export +
 a from-scratch Streamlit dashboard, an eval runner (`single_response.jsonl` /

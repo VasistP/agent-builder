@@ -1,8 +1,8 @@
 ---
 name: agent-builder
 description: >-
-  Interactive, checkpoint-gated framework for standing up a production-grade
-  enterprise AI-agent POC. Use when someone wants to start a new agent project,
+  Interactive, checkpoint-gated framework for standing up a rigorously
+  evaluated enterprise AI-agent POC. Use when someone wants to start a new agent project,
   or wants to add/audit evaluations, observability or security on an existing
   agentic codebase. Walks through discovery, scaffolding, observability, eval
   test-set creation, deterministic testing, an agent skeleton, an eval-gated
@@ -31,10 +31,12 @@ when you work the phase, not before.
 6. **Context files are mandatory**: `AGENTS.md`, `docs/ARCHITECTURE.md`,
    append-only `CHANGELOG`/`TODO`, model-tier routing. → `context-and-cost.md`
 7. **Security for any data/tool agent.** → `security-standards.md`
-8. **Evals measure reliability, not one sample.** 3+ runs/case, gate on pass^k,
-   and the golden standard (20 single / 5 conversations / 12 adversarial / 3
-   multi-turn adversarial) is **stated to the user, never asked of them** and
-   enforced by `make eval-coverage`. → `eval-standards.md`
+8. **Evals measure reliability, not one sample.** 3+ runs/case, gate on pass^k.
+   The golden standard (20 single / 5 conversations / 12 adversarial / 3
+   multi-turn) is a **coverage floor, stated to the user rather than asked of
+   them**, enforced by `make eval-coverage`. It is not statistical power: at
+   n=20 the 95% margin of error is ±22pp, so report *which cases flipped*, never
+   a few-point aggregate move. → `eval-standards.md`
 9. **API keys need explicit permission.** Judge defaults to local Ollama; a
    hosted judge costs money per run — say so before enabling one.
 10. **Phases 0, 3, 6, 7, 8 are interview-locked.** → `interview-protocol.md`

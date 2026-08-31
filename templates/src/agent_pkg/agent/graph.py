@@ -37,9 +37,20 @@ def step(state: AgentState) -> AgentState:
             with span(
                 "execute_tool", operation="execute_tool", attributes={"tool.name": tool.name}
             ) as s:
-                result = dispatch(tool.name, tool.arguments)
+                error: str | None = None
+                try:
+                    result = dispatch(tool.name, tool.arguments)
+                except Exception as exc:  # noqa: BLE001 - surfaced to the agent as a tool result
+                    # The agent must see the failure and get a chance to recover;
+                    # evals/graders grade that recovery (recovered_from_error).
+                    error = f"{type(exc).__name__}: {exc}"
+                    result = f"ERROR: {error}"
                 s["output"] = result
-            state.add("tool", result, tool_name=tool.name)
+                if error:
+                    s["error"] = error
+            state.add(
+                "tool", result, tool_name=tool.name, tool_args=tool.arguments, tool_error=error
+            )
         reply = complete(render_prompt(state))
         state.add("assistant", reply)
     return state

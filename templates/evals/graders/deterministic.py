@@ -42,21 +42,90 @@ def grade_contains_none(spec: dict, output: str, **_: Any) -> Result:
 
 
 def grade_json_schema(spec: dict, output: str, **_: Any) -> Result:
-    """Pass if output parses as JSON and contains spec['schema']['required'] keys."""
+    """Pass if output parses as JSON and validates against spec['schema'].
+
+    Full JSON Schema validation via `jsonschema`, not a required-keys check: a
+    case asserting a typed schema and getting only a key-presence check is the
+    kind of gap that reports coverage it does not have. Types, enums, nested
+    objects and array items are all enforced.
+    """
     try:
         data = json.loads(output)
     except json.JSONDecodeError as exc:
         return _ok("json_schema", False, f"not json: {exc}")
-    required = spec.get("schema", {}).get("required", [])
-    missing = [k for k in required if k not in data]
-    return _ok("json_schema", not missing, f"missing={missing}")
+    try:
+        import jsonschema
+    except ImportError:  # pragma: no cover - dependency is declared in pyproject
+        return _ok("json_schema", False, "jsonschema not installed (uv sync --extra evals)")
+    try:
+        jsonschema.validate(data, spec.get("schema", {}))
+    except jsonschema.ValidationError as exc:
+        path = "/".join(str(p) for p in exc.absolute_path) or "<root>"
+        return _ok("json_schema", False, f"{path}: {exc.message}")
+    except jsonschema.SchemaError as exc:
+        return _ok("json_schema", False, f"invalid schema in the eval case: {exc.message}")
+    return _ok("json_schema", True)
 
 
-def grade_tool_called(spec: dict, output: str, *, tool_calls: list[str], **_: Any) -> Result:
-    """Pass if the named tool appears in the run's tool calls the required number of times."""
-    count = tool_calls.count(spec["name"])
-    need = spec.get("times", 1)
-    return _ok("tool_called", count >= need, f"{spec['name']} x{count} (need {need})")
+def grade_tool_called(
+    spec: dict,
+    output: str,
+    *,
+    tool_calls: list[str],
+    tool_events: list[dict] | None = None,
+    **_: Any,
+) -> Result:
+    """Pass if the named tool ran the required number of times, with matching args.
+
+    ``args_match`` is a subset check against the recorded call arguments: the
+    listed keys must be present and equal, other arguments are ignored. Calling
+    the right tool with the wrong arguments is a distinct and common failure
+    (querying the wrong table, the wrong date range), so a case that asserts
+    arguments must actually have them checked.
+    """
+    name, need = spec["name"], spec.get("times", 1)
+    want = spec.get("args_match")
+    if want is None:
+        count = tool_calls.count(name)
+        return _ok("tool_called", count >= need, f"{name} x{count} (need {need})")
+
+    events = [e for e in (tool_events or []) if e.get("name") == name]
+    if not events and tool_calls.count(name):
+        return _ok("tool_called", False, f"{name} ran but no arguments were recorded")
+    matching = [e for e in events if all(e.get("args", {}).get(k) == v for k, v in want.items())]
+    if len(matching) >= need:
+        return _ok("tool_called", True, f"{name} x{len(matching)} matching args")
+    seen = [e.get("args", {}) for e in events] or "no calls"
+    return _ok("tool_called", False, f"{name}: wanted args {want}, saw {seen}")
+
+
+def grade_recovered_from_error(
+    spec: dict,
+    output: str,
+    *,
+    tool_events: list[dict] | None = None,
+    **_: Any,
+) -> Result:
+    """Pass if a tool errored and the agent still reached a usable answer.
+
+    Requires an actual error in the trajectory — if nothing failed, the case did
+    not test recovery and is reported as inconclusive rather than passing, so a
+    missing `inject` fixture cannot make this grader look satisfied.
+    """
+    events = tool_events or []
+    errored = [e for e in events if e.get("error")]
+    if not errored:
+        return _ok(
+            "recovered_from_error",
+            False,
+            "no tool error occurred — nothing to recover from (is the inject fixture wired?)",
+        )
+    after = events[events.index(errored[-1]) + 1 :]
+    retried = any(not e.get("error") for e in after)
+    answered = bool(output.strip()) and "ERROR:" not in output
+    passed = answered and (retried or not spec.get("require_retry", False))
+    detail = f"errors={len(errored)} retried={retried} answered={answered}"
+    return _ok("recovered_from_error", passed, detail)
 
 
 def grade_max_steps(spec: dict, output: str, *, steps: int, **_: Any) -> Result:
@@ -99,6 +168,7 @@ DETERMINISTIC_GRADERS = {
     "contains_all": grade_contains_all,
     "contains_none": grade_contains_none,
     "json_schema": grade_json_schema,
+    "recovered_from_error": grade_recovered_from_error,
     "tool_called": grade_tool_called,
     "max_steps": grade_max_steps,
     "latency_budget": grade_latency_budget,

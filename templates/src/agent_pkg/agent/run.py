@@ -10,7 +10,7 @@ import uuid
 from collections.abc import Iterable
 
 from agent_pkg.agent.graph import step
-from agent_pkg.agent.state import AgentState, Response
+from agent_pkg.agent.state import AgentState, Response, ToolEvent
 
 
 def run_once(request: str, *, conversation_id: str | None = None) -> Response:
@@ -43,10 +43,20 @@ def chat(turns: Iterable[str], *, conversation_id: str | None = None) -> list[Re
 def _to_response(state: AgentState) -> Response:
     """Build a `Response` from the final assistant message and tool history."""
     text = next((m.content for m in reversed(state.messages) if m.role == "assistant"), "")
-    tools = [m.tool_name for m in state.messages if m.role == "tool" and m.tool_name]
+    events = [
+        ToolEvent(
+            name=m.tool_name,
+            args=m.tool_args or {},
+            output=m.content,
+            error=m.tool_error,
+        )
+        for m in state.messages
+        if m.role == "tool" and m.tool_name
+    ]
     return Response(
         text=text,
         conversation_id=state.conversation_id,
         steps=state.steps,
-        tool_calls=tools,
+        tool_calls=[e.name for e in events],
+        tool_events=events,
     )

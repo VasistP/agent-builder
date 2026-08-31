@@ -29,7 +29,7 @@ row as part of the override.
 
 | Item | Default | Enforced at | Blast radius |
 |------|---------|-------------|--------------|
-| `pipeline.phase_order` | 0→6 | root `SKILL.md` | Later phases assume earlier outputs. Reordering usually means evals or observability get built against a moving target. |
+| `pipeline.phase_order` | 0→8 | root `SKILL.md` | Later phases assume earlier outputs. Reordering usually means evals or observability get built against a moving target. |
 | `pipeline.skip_phase` | none skippable | root `SKILL.md` | Depends which. Skipping 4 (tests) is cheap-ish; skipping 0 (discovery) means evals have no ground truth to derive from. |
 | `testing.no_fake_model_calls` | enforced | `references/deterministic-testing.md`, `tests/conftest.py` | This is the rule that keeps evals meaningful. Override it and your test suite will appear to cover model behavior while covering nothing. |
 | `testing.no_network_guard` | on | `tests/conftest.py` | Deterministic tests can silently start making paid model calls in CI. |
@@ -59,9 +59,9 @@ row as part of the override.
 | `evals.pass_threshold` | no-regression vs baseline | Loosening this is the quiet way to disable the gate; treat a threshold drop >10pts as Tier B. |
 | `observability.tool` | by agent type | Free choice among OSS options. JSON export stays on regardless (Tier A). |
 | `observability.capture_content` | `false` | Turning on captures prompts/responses — compliance implications; check `spec.md` for PII/regulatory constraints first. |
-| `observability.retention` | unbounded | Fine to set; unbounded is the riskier default for volume. |
+| `observability.retention` | rotate `logs/traces/` at 30 days | Matches `observability-standards.md` O-retention, which requires a policy. Unbounded local traces grow without limit and, where captured content includes user data, extend how long it is held — set it deliberately rather than leaving it off. |
 | `data.stores` | per discovery | Free choice. |
-| `mcp.servers` | context7, playwright, memory, sequential-thinking | *Removing* one is Tier C — only dev ergonomics suffer. *Adding* one is gated by `mcp.vetting` (Tier B): each addition widens the supply chain. |
+| `mcp.servers` | none enabled by default; catalogued: context7, playwright, memory, sequential-thinking | Nothing is pre-enabled (`skills/1-scaffold` ships a catalogue, not an `.mcp.json`), so this row governs *enabling* one. Declining one is free. *Adding* one is gated by `mcp.vetting` (Tier B): each addition widens the supply chain. |
 | `models.tier_policy` | nano / standard / deep per `.agent/model-policy.yml` | Editing tier *rules* is Tier C. Removing routing entirely is Tier B — it is the control that stops expensive models doing mechanical work. |
 | `models.floors` | ARCHITECTURE.md=deep, evals=standard | Lowering a floor is Tier B: floors exist precisely because keyword matching under-rates these edits. |
 | `dashboard.panels` | O8 must-haves | Removing a must-have panel is Tier B, adding panels is Tier C. |

@@ -31,12 +31,14 @@ import subprocess
 import sys
 import time
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
 
+from evals.fixtures import MissingFixtureError, applied, is_registered
 from evals.graders import run_grader
 from evals.judge import judge
 
@@ -46,14 +48,17 @@ RESULTS_DIR = EVAL_DIR / "results"
 JUDGE_GRADERS = {"llm_judge", "goal_met"}
 
 #: The golden standard: the eval suite every agent built with this framework is
-#: expected to reach before it can be called tested. Not a suggestion and not a
-#: question to put to the developer — most people have no basis to answer "how
-#: many cases is enough?", and the honest answer depends on statistics they
-#: should not have to derive. 20 single-response cases is the point below which
-#: a 3-point pass-rate move cannot be told from noise (eval-standards.md E11);
-#: 5 conversations is the floor for multi-turn behavior; 12 adversarial cases is
-#: one per attack class in adversarial-standards.md, plus 3 multi-turn attacks
-#: because escalation only shows up across turns.
+#: expected to reach before it can be called tested. Stated to the developer
+#: rather than asked of them — "how many cases is enough?" has no good intuitive
+#: answer.
+#:
+#: These are COVERAGE floors, NOT statistical power. At n=20 the 95% margin of
+#: error on a pass rate is about +/-22 points, so the suite answers "was this
+#: capability exercised at all?" and "which specific case broke?", never "is a
+#: 3-point improvement real?" (eval-standards.md E11). 5 conversations is the
+#: floor for multi-turn behavior; 12 adversarial is one per attack class in
+#: adversarial-standards.md, plus 3 multi-turn attacks because escalation only
+#: shows up across turns.
 #:
 #: Two stages, because tiered EDD writes ~30% of the suite before any code and
 #: harvests the rest from real traces (references/methodology.md):
@@ -110,14 +115,63 @@ def _git_sha() -> str:
         return "unknown"
 
 
+def _trace_excerpt(events: list, limit: int = 400) -> str:
+    """Render the trajectory the judge needs: calls, arguments, outputs, errors.
+
+    A judge asked about groundedness or trajectory quality with only a list of
+    tool names has no evidence to reason from — it can see that `search` ran, not
+    what it was asked or what came back, so it grades the prose alone and reports
+    a verdict it cannot support. Outputs are truncated per event, not dropped.
+    """
+    if not events:
+        return "(no tool calls)"
+    lines = []
+    for i, e in enumerate(events, 1):
+        args = json.dumps(e.args, ensure_ascii=False, default=str) if e.args else "{}"
+        head = f"{i}. {e.name}({args})"
+        if e.error:
+            lines.append(f"{head}\n   ERROR: {e.error}")
+            continue
+        out = e.output or ""
+        if len(out) > limit:
+            out = out[:limit] + f"... [{len(out) - limit} more chars]"
+        lines.append(f"{head}\n   -> {out}")
+    return "\n".join(lines)
+
+
+def _ctx(resp, latency_s: float, case: dict) -> dict:
+    """Build the grader/judge context for one response.
+
+    ``goal`` is included because `goal_met` is defined as "end state satisfies the
+    case's goal" — without it the judge is asked whether an answer is good in the
+    abstract, which is a different and much weaker question.
+    """
+    events = getattr(resp, "tool_events", [])
+    return {
+        "tool_calls": resp.tool_calls,
+        "tool_events": [
+            {"name": e.name, "args": e.args, "output": e.output, "error": e.error} for e in events
+        ],
+        "steps": resp.steps,
+        "latency_s": latency_s,
+        "goal": case.get("goal", ""),
+        "trace_excerpt": _trace_excerpt(events),
+    }
+
+
 def _grade_one(expect: list[dict], output: str, ctx: dict) -> list[dict]:
     """Run every grader spec in `expect` against one output; return check results."""
     results = []
     for spec in expect:
         if spec["type"] in JUDGE_GRADERS:
+            criteria = spec.get("criteria", "")
+            if spec["type"] == "goal_met" and ctx.get("goal"):
+                # goal_met is defined against the case's stated goal; passing only
+                # `criteria` asked the judge a vaguer question than the case posed.
+                criteria = f"Goal: {ctx['goal']}\n{criteria}".strip()
             verdict = judge(
                 spec.get("rubric", "goal-check"),
-                spec.get("criteria", ""),
+                criteria,
                 output,
                 ctx.get("trace_excerpt", ""),
             )
@@ -165,6 +219,30 @@ def _record(case: dict, kind: str, runs: list[list[dict]]) -> dict:
     }
 
 
+@contextmanager
+def _maybe_setup(case: dict) -> Iterator[None]:
+    """Apply the case's registered fixture, if the case declares one."""
+    if case.get("setup"):
+        with applied(case, what="setup"):
+            yield
+    else:
+        yield
+
+
+def _unperformable(cases: list[dict]) -> list[str]:
+    """Return ids of cases whose setup/inject cannot actually be performed.
+
+    Checked up front so the suite refuses to start rather than reporting passes
+    for attacks that were never staged.
+    """
+    bad = []
+    for case in cases:
+        declares = bool(case.get("setup")) or any(t.get("inject") for t in case.get("turns", []))
+        if declares and not is_registered(case["id"]):
+            bad.append(case["id"])
+    return bad
+
+
 def _errored(exc: Exception) -> list[dict]:
     """Represent a case that raised before it could be graded as a failed check."""
     return [
@@ -186,16 +264,16 @@ def _run_single(cases: list[dict], runs: int = 3) -> list[dict]:
         for i in range(runs):
             start = time.time()
             try:
-                resp = run_once(case["input"], conversation_id=f"{case['id']}-r{i}")
+                # A case with "setup" needs its fixture to run for the case to mean
+                # anything; applied() raises if none is registered.
+                with _maybe_setup(case):
+                    resp = run_once(case["input"], conversation_id=f"{case['id']}-r{i}")
+            except MissingFixtureError:
+                raise
             except Exception as exc:  # noqa: BLE001 - recorded as a failed run
                 attempts.append(_errored(exc))
                 continue
-            ctx = {
-                "tool_calls": resp.tool_calls,
-                "steps": resp.steps,
-                "latency_s": time.time() - start,
-                "trace_excerpt": " -> ".join(resp.tool_calls),
-            }
+            ctx = _ctx(resp, time.time() - start, case)
             attempts.append(_grade_one(case.get("graders", []), resp.text, ctx))
         out.append(_record(case, "single", attempts))
     return out
@@ -219,29 +297,22 @@ def _one_conversation(case: dict, run_index: int, chat: Callable) -> list[dict]:
     turns = [t["user"] for t in case["turns"]]
     start = time.time()
     try:
-        responses = chat(turns, conversation_id=f"{case['id']}-r{run_index}")
+        with _maybe_setup(case):
+            responses = chat(turns, conversation_id=f"{case['id']}-r{run_index}")
+    except MissingFixtureError:
+        raise
     except Exception as exc:  # noqa: BLE001 - recorded as a failed run
         return _errored(exc)
 
     checks: list[dict] = []
     for turn, resp in zip(case["turns"], responses, strict=False):
-        ctx = {
-            "tool_calls": resp.tool_calls,
-            "steps": resp.steps,
-            "latency_s": 0.0,
-            "trace_excerpt": " -> ".join(resp.tool_calls),
-        }
-        checks += _grade_one(turn.get("expect", []), resp.text, ctx)
+        checks += _grade_one(turn.get("expect", []), resp.text, _ctx(resp, 0.0, case))
 
     final = responses[-1] if responses else None
     if final is not None:
-        ctx = {
-            "tool_calls": final.tool_calls,
-            "steps": final.steps,
-            "latency_s": time.time() - start,
-            "trace_excerpt": " -> ".join(final.tool_calls),
-        }
-        checks += _grade_one(case.get("end_expect", []), final.text, ctx)
+        checks += _grade_one(
+            case.get("end_expect", []), final.text, _ctx(final, time.time() - start, case)
+        )
     return checks
 
 
@@ -329,6 +400,25 @@ def _missing_attack_classes(adv: list[dict], adv_convos: list[dict]) -> list[str
 
 _ADVERSARIAL_FILES = ("adversarial.jsonl", "adversarial_conversations.jsonl")
 
+#: Below this many cases in one capability slice, a failure tells you almost
+#: nothing: one flaky case swings the slice by 20+ points. Advisory, not blocking
+#: — the right total depends on how many capabilities the agent actually has.
+MIN_SLICE = 5
+
+
+def _thin_capability_slices() -> list[tuple[str, int]]:
+    """Return (capability, count) for slices too small to fail informatively.
+
+    A global floor of 20 spread over 8 capabilities is 2-3 each, which satisfies
+    the count while leaving every individual capability untested in practice.
+    """
+    counts: dict[str, int] = defaultdict(int)
+    for filename in ("single_response.jsonl", "conversations.jsonl"):
+        for case in _load_jsonl(EVAL_DIR / filename):
+            if _is_real_case(case):
+                counts[case.get("tags", {}).get("capability", "untagged")] += 1
+    return sorted((k, v) for k, v in counts.items() if v < MIN_SLICE)
+
 
 def coverage_report(allow_thin: bool = False, stage: str | None = None) -> tuple[list[str], bool]:
     """Check the suite against the golden standard; return (report lines, blocked).
@@ -370,6 +460,11 @@ def coverage_report(allow_thin: bool = False, stage: str | None = None) -> tuple
         if have < floor:
             short.append(f"{label}: {have} of {floor}")
 
+    thin = _thin_capability_slices()
+    if thin:
+        lines.append("  thin capability slices (<5 cases, cannot fail informatively):")
+        lines.extend(f"    {name}: {n}" for name, n in thin)
+
     if stage == "golden":
         adv = _load_jsonl(EVAL_DIR / "adversarial.jsonl")
         adv_convos = _load_jsonl(EVAL_DIR / "adversarial_conversations.jsonl")
@@ -404,18 +499,59 @@ def coverage_report(allow_thin: bool = False, stage: str | None = None) -> tuple
     return lines, True
 
 
+def _previous_summary(current: Path) -> tuple[dict, str]:
+    """Return the summary to compare against, and where it came from.
+
+    Selection is explicit rather than lexicographic. The old code took the
+    second-to-last of ``sorted(glob("*.json"))``, which broke in three ways: a
+    file named ``baseline.json`` sorts before every timestamped run and could be
+    picked or skipped depending on how many runs existed; the ordering was string
+    ordering over names, not time; and on a fresh CI runner with no history the
+    comparison silently became current-vs-current, reporting a flat delta that
+    looked like "no regression".
+
+    Order of preference: an explicit ``baseline.json``, else the most recent
+    earlier run by modification time. The current run is always excluded.
+    """
+    pinned = RESULTS_DIR / "baseline.json"
+    if pinned.exists() and pinned != current:
+        return json.loads(pinned.read_text(encoding="utf-8")).get("summary", {}), pinned.name
+    runs = [p for p in RESULTS_DIR.glob("*.json") if p != current and p.name != "baseline.json"]
+    if not runs:
+        return {}, "no previous run"
+    latest = max(runs, key=lambda p: p.stat().st_mtime)
+    return json.loads(latest.read_text(encoding="utf-8")).get("summary", {}), latest.name
+
+
 def _preflight() -> str | None:
     """Return a human-readable reason the suite cannot run, or None if it can.
 
     Checked before invoking the agent so a missing key produces one clear message
     rather than an identical failure recorded against every case.
     """
-    if not os.getenv("ANTHROPIC_API_KEY"):
+    # Keyed to the provider the agent is actually configured with. Demanding
+    # ANTHROPIC_API_KEY from a project running Ollama, Bedrock or OpenAI blocks a
+    # suite that would have worked, and teaches people to set a dummy value.
+    agent_provider = os.getenv("AGENT_MODEL_PROVIDER", "anthropic").lower()
+    required_key = {
+        "anthropic": "ANTHROPIC_API_KEY",
+        "openai": "OPENAI_API_KEY",
+        "google": "GOOGLE_API_KEY",
+        "azure": "AZURE_OPENAI_API_KEY",
+    }.get(agent_provider)
+    if required_key and not os.getenv(required_key):
         return (
-            "ANTHROPIC_API_KEY is not set, so the agent cannot be invoked.\n"
-            "  Evals call the real model by design — set it in .env.\n"
+            f"AGENT_MODEL_PROVIDER={agent_provider} but {required_key} is not set,\n"
+            "  so the agent cannot be invoked. Evals call the real model by design —\n"
+            "  set it in .env, or set AGENT_MODEL_PROVIDER to your actual provider.\n"
             "  (The judge is separate and runs locally via Ollama by default.)"
         )
+    if agent_provider in {"ollama", "local"}:
+        host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+        try:
+            httpx.get(f"{host}/api/version", timeout=2.0).raise_for_status()
+        except Exception:  # noqa: BLE001
+            return f"AGENT_MODEL_PROVIDER={agent_provider} but nothing answers at {host}."
     provider = os.getenv("EVAL_JUDGE_PROVIDER", "ollama").lower()
     if provider == "ollama":
         host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
@@ -501,6 +637,16 @@ def main() -> int:
         print("No eval cases yet. Run skills/3-evalset to create them.")
         return 0
 
+    if unperformable := _unperformable([*single, *convos, *adv, *adv_convos]):
+        print(
+            "\nCannot run evals: these cases declare setup/inject but have no "
+            "fixture registered,\n  so the scenario would never be staged and the "
+            "case would pass without testing it:\n"
+            + "".join(f"    - {cid}\n" for cid in unperformable)
+            + "  Register them in evals/fixtures.py, or remove the setup/inject key."
+        )
+        return 2
+
     if (problem := _preflight()) is not None:
         print(f"\nCannot run evals: {problem}")
         return 2
@@ -544,14 +690,17 @@ def main() -> int:
     out_path = RESULTS_DIR / f"{int(time.time())}.json"
     out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
-    prev = sorted(RESULTS_DIR.glob("*.json"))
-    prev_summary = json.loads(prev[-2].read_text())["summary"] if len(prev) > 1 else {}
+    prev_summary, baseline_name = _previous_summary(out_path)
 
     print(
         f"\nEval results  (sha {payload['agent_sha']}, {len(records)} cases "
         f"x {args.runs} runs)  -> {out_path.name}"
     )
-    print(f"  noise band (+/-): {band:.1%} — deltas smaller than this are not signal\n")
+    print(f"  noise band (+/-): {band:.1%} — deltas smaller than this are not signal")
+    print(f"  compared against: {baseline_name}")
+    if not prev_summary:
+        print("  no baseline — deltas below are not meaningful on this run")
+    print()
 
     regressions = []
     for tag, rate in sorted(summary.items()):

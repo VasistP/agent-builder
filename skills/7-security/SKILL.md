@@ -30,7 +30,7 @@ targets — it is mandatory.
 - **build** — greenfield: wire the boundaries into the skeleton.
 - **add** — existing agent: instrument boundaries without redesigning it. Show a
   diff and get approval before applying.
-- **audit** — score against `references/security-standards.md` S1–S10, check for
+- **audit** — score against `references/security-standards.md` S1–S11, check for
   newer OWASP guidance, output a prioritized gap list ranked by
   **exploitability × blast radius**. No changes unless asked.
 

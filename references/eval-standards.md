@@ -84,15 +84,28 @@ Scoring an existing setup: mark each item `pass` / `partial` / `fail` /
 - **Fix:** add a refresh ritual; import failure traces as new cases.
 
 ## E11. Sample size is adequate for the decision
-- **The golden standard this framework enforces:** 20 single-response cases,
-  5 conversations, 12 adversarial (one per attack class, or a recorded waiver),
-  3 multi-turn adversarial. Checked by `evals/run_evals.py --check-coverage`,
-  binding at phase 8, lowered only via `skills/override`
-  (`evals.coverage_floor`). It is stated to the developer rather than asked of
-  them: "how many cases is enough" depends on the smallest effect you need to
-  resolve, which is not a question a product owner can answer from intuition.
-  These are floors for a POC, not targets — release gating wants hundreds.
 - **Why:** a 20-case set can't distinguish a 3-point pass-rate move from noise.
+  Concretely, at a 50% pass rate the 95% margin of error on 20 independent cases
+  is **±22 percentage points** (1.96·√(0.25/20)). Resolving a 3-point *absolute*
+  difference between two independent runs needs on the order of **4,000 cases per
+  arm**; a paired design — the same cases before and after, counting only the
+  ones that flipped — needs far fewer, but still hundreds. Anyone quoting a
+  small-n suite as evidence of a few-point improvement is reading noise.
+- **What the framework's floor is, and is not.** The golden standard —
+  20 single-response, 5 conversations, 12 adversarial (one per attack class or a
+  recorded waiver), 3 multi-turn adversarial — is a **coverage floor, not a
+  statistical-power floor**. It answers "has every capability and attack class
+  been exercised at all?", which is the question a POC can actually afford to
+  answer. It does **not** license a claim that a 3-point movement is real.
+  Checked by `evals/run_evals.py --check-coverage`, binding at phase 8, lowered
+  only via `skills/override` (`evals.coverage_floor`).
+- **Allocate the floor per capability, not just globally.** 20 cases spread over
+  8 capabilities is 2-3 each, and a slice that thin cannot fail informatively.
+  `--check-coverage` reports per-capability counts and warns below 5 in a slice.
+- **What to trust instead of the headline rate at this size:** the noise band
+  `run_evals.py` computes from observed per-case variance across k runs, the
+  pass^k / pass@k gap, and *which specific cases* flipped. A named case that
+  regressed is evidence; a 3-point aggregate move at n=20 is not.
 - **Verify:** set size justified against the smallest pass-rate change you need
   to detect (rough rule: tens of cases per capability for POC signal; hundreds
   for release gating); per-tag counts not tiny; report shows counts alongside

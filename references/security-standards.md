@@ -21,6 +21,22 @@ Check for the trifecta first; if present, break one leg of it.
 
 ---
 
+## S0. The controls are wired, not merely present
+
+Before auditing any individual control, check that it is on the path a real call
+takes. A correct, unit-tested primitive that nothing calls is the most expensive
+kind of security gap: it passes review, it passes tests, and it protects nothing.
+
+- **Verify:** trace one side-effecting tool call end to end. Does the permission
+  check run? Does the approval gate fire? Can a tool author actually *declare*
+  the posture the enforcement reads — or does the declaration field exist with no
+  way to set it? `make tools-posture` should list a non-empty set of
+  approval-gated tools for any agent that writes anywhere.
+- **Fix:** move enforcement to the narrowest chokepoint every call passes
+  through (`dispatch`), make the declaration required rather than defaulted, and
+  add a test that asserts a side-effecting tool is *denied* through the public
+  path — not one that asserts the helper works in isolation.
+
 ## S1. All external content is treated as untrusted data, never as instructions
 - **Why:** the model cannot reliably distinguish instructions in its prompt from
   instructions embedded in retrieved content. This is the root cause of #1.

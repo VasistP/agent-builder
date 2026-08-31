@@ -71,6 +71,7 @@ codebase — you do not have to have used this framework to build it.
 | `make integrations-enable` | Add one catalogued MCP server:  make integrations-enable NAME=context7 |
 | `make route` | Which model tier should a task use?  make route T="find the parser" |
 | `make functions-index` | Regenerate FUNCTIONS.md from src/ docstrings |
+| `make tools-posture` | Show every tool's permission, side-effect flag and where it's declared |
 | `make eval-coverage` | Check the eval suite against the golden standard (no tokens) |
 | `make eval-coverage-golden` | The phase 8 gate: full golden standard, blocking |
 | `make eval` | Run the eval suite (local Ollama judge by default) |

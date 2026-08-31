@@ -5,7 +5,7 @@ Run `make functions-index` after changing any function.
 
 | Location | Signature | Summary |
 | --- | --- | --- |
-| `src/agent_pkg/__main__.py:10` | `def main()` | Run a single request from the command line and print the response. |
+| `src/agent_pkg/__main__.py:11` | `def main()` | Run a single request from the command line and print the response. |
 | `src/agent_pkg/agent/checkpoint.py:54` | `def idempotency_key(run_id, tool_name, arguments)` | Return a stable key identifying one side-effecting call. |
 | `src/agent_pkg/agent/checkpoint.py:98` | `def run_once_idempotent(checkpoint, tool_name, arguments, action)` | Execute a side-effecting action at most once per run, even across replays. |
 | `src/agent_pkg/agent/checkpoint.py:70` | `def __init__(self, directory)` | (no docstring) |
@@ -17,8 +17,8 @@ Run `make functions-index` after changing any function.
 | `src/agent_pkg/agent/compaction.py:65` | `def should_compact(messages, policy)` | Return True if the conversation has grown past the compaction trigger. |
 | `src/agent_pkg/agent/compaction.py:70` | `def select_for_compaction(messages, policy)` | Split messages into (head_kept, to_summarize, tail_kept). |
 | `src/agent_pkg/agent/compaction.py:90` | `def assemble_compacted(head, summary, tail)` | Rebuild the conversation from kept turns plus the generated summary. |
-| `src/agent_pkg/agent/graph.py:16` | `def render_prompt(state)` | Render the transcript into a single prompt string (deterministic). |
-| `src/agent_pkg/agent/graph.py:26` | `def step(state)` | Advance the agent by one step: maybe call a tool, then get a reply. |
+| `src/agent_pkg/agent/graph.py:17` | `def render_prompt(state)` | Render the transcript into a single prompt string (deterministic). |
+| `src/agent_pkg/agent/graph.py:27` | `def step(state, policy)` | Advance the agent by one step: maybe call a tool, then get a reply. |
 | `src/agent_pkg/agent/guardrails.py:140` | `def require_approval(tool_name, arguments)` | Gate a side-effecting action behind a human decision (security S3). |
 | `src/agent_pkg/agent/guardrails.py:33` | `def __init__(self, tool_name, arguments, reason)` | (no docstring) |
 | `src/agent_pkg/agent/guardrails.py:73` | `def start(self)` | Mark the beginning of the run for wall-clock budgeting. |
@@ -28,9 +28,9 @@ Run `make functions-index` after changing any function.
 | `src/agent_pkg/agent/guardrails.py:121` | `def add_cost(self, cost_usd)` | Add model cost to the run and trip if it exceeds the budget. |
 | `src/agent_pkg/agent/guardrails.py:129` | `def _check_clock(self)` | (no docstring) |
 | `src/agent_pkg/agent/model.py:23` | `def complete(prompt)` | Return the model completion for `prompt`, emitting an OTel GenAI span. |
-| `src/agent_pkg/agent/run.py:16` | `def run_once(request)` | Handle a single request and return the final response. |
-| `src/agent_pkg/agent/run.py:32` | `def chat(turns)` | Run a sequence of user turns in one conversation, returning a Response per turn. |
-| `src/agent_pkg/agent/run.py:43` | `def _to_response(state)` | Build a `Response` from the final assistant message and tool history. |
+| `src/agent_pkg/agent/run.py:17` | `def run_once(request)` | Handle a single request and return the final response. |
+| `src/agent_pkg/agent/run.py:37` | `def chat(turns)` | Run a sequence of user turns in one conversation, returning a Response per turn. |
+| `src/agent_pkg/agent/run.py:53` | `def _to_response(state)` | Build a `Response` from the final assistant message and tool history. |
 | `src/agent_pkg/agent/state.py:38` | `def add(self, role, content, tool_name, tool_args, tool_error)` | Append a message to the running transcript. |
 | `src/agent_pkg/data/__init__.py:19` | `def health(self)` | Return True if the store is reachable and ready. |
 | `src/agent_pkg/data/__init__.py:23` | `def query(self, request)` | Execute a read against the store and return raw results. |
@@ -50,12 +50,17 @@ Run `make functions-index` after changing any function.
 | `src/agent_pkg/security/permissions.py:35` | `def check_permission(tool_name, required, granted)` | Raise `PermissionDenied` unless `required` is in `granted`. |
 | `src/agent_pkg/security/permissions.py:60` | `def describe_grants(granted)` | Return a human-readable summary of a grant set, for traces and audits. |
 | `src/agent_pkg/security/permissions.py:67` | `def has_lethal_trifecta()` | Return True if this agent combines private data, untrusted input, and egress. |
+| `src/agent_pkg/security/policy.py:23` | `def deny_all(tool_name, arguments, reason)` | Approver that refuses everything. The correct approver for eval runs. |
+| `src/agent_pkg/security/policy.py:33` | `def cli_approver(tool_name, arguments, reason)` | Ask on the terminal. For interactive development only. |
+| `src/agent_pkg/security/policy.py:55` | `def describe(self)` | Human-readable summary, for traces and the phase 7 audit. |
 | `src/agent_pkg/security/untrusted.py:60` | `def strip_forgery(text)` | Neutralize fence and role-header lookalikes inside untrusted content. |
 | `src/agent_pkg/security/untrusted.py:65` | `def wrap_untrusted(content, provenance)` | Return `content` fenced and labelled as untrusted data. |
-| `src/agent_pkg/tools/registry.py:49` | `def tool(name, description, parameters)` | Decorator registering `func` as a callable tool. |
-| `src/agent_pkg/tools/registry.py:68` | `def dispatch(name, arguments)` | Invoke a registered tool by name, enforcing permissions first. |
-| `src/agent_pkg/tools/registry.py:94` | `def audit_tools()` | Return warnings about the tool catalogue's design quality. |
-| `src/agent_pkg/tools/registry.py:139` | `def specs()` | Return all registered tool specs (for building the model tool list). |
-| `src/agent_pkg/tools/registry.py:147` | `def is_tool_request(text)` | Detect an explicit `/toolname args` request in user text (deterministic). |
-| `src/agent_pkg/tools/registry.py:164` | `def _echo(text)` | Return `text` unchanged. |
-| `src/agent_pkg/tools/registry.py:60` | `def wrap(func)` | Register `func` and return it unchanged. |
+| `src/agent_pkg/tools/registry.py:81` | `def tool(name, description, parameters)` | Decorator registering `func` as a callable tool. |
+| `src/agent_pkg/tools/registry.py:149` | `def dispatch(name, arguments)` | Invoke a registered tool by name, enforcing permission then approval. |
+| `src/agent_pkg/tools/registry.py:195` | `def audit_tools()` | Return warnings about the tool catalogue's design quality. |
+| `src/agent_pkg/tools/registry.py:253` | `def posture_report()` | Return the security posture of every registered tool, with where to change it. |
+| `src/agent_pkg/tools/registry.py:282` | `def specs()` | Return all registered tool specs (for building the model tool list). |
+| `src/agent_pkg/tools/registry.py:290` | `def is_tool_request(text)` | Detect an explicit `/toolname args` request in user text (deterministic). |
+| `src/agent_pkg/tools/registry.py:308` | `def _echo(text)` | Return `text` unchanged. |
+| `src/agent_pkg/tools/registry.py:41` | `def posture(self)` | One-line summary of this tool's security posture, for `make tools`. |
+| `src/agent_pkg/tools/registry.py:114` | `def wrap(func)` | Register `func` and return it unchanged. |

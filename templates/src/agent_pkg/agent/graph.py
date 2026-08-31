@@ -10,6 +10,7 @@ from __future__ import annotations
 from agent_pkg.agent.model import complete
 from agent_pkg.agent.state import AgentState
 from agent_pkg.observability.tracing import span
+from agent_pkg.security.policy import RunPolicy
 from agent_pkg.tools.registry import dispatch, is_tool_request
 
 
@@ -23,8 +24,16 @@ def render_prompt(state: AgentState) -> str:
     return "\n".join(lines) + "\nASSISTANT:"
 
 
-def step(state: AgentState) -> AgentState:
-    """Advance the agent by one step: maybe call a tool, then get a reply."""
+def step(state: AgentState, policy: RunPolicy | None = None) -> AgentState:
+    """Advance the agent by one step: maybe call a tool, then get a reply.
+
+    Args:
+        state: The run's mutable state.
+        policy: Permissions granted to this run and the approver for
+            side-effecting tools. When None, the default policy is used:
+            READ only, no approver, so side-effecting tools are denied.
+    """
+    policy = policy or RunPolicy()
     state.steps += 1
     with span(
         "agent run",
@@ -39,7 +48,12 @@ def step(state: AgentState) -> AgentState:
             ) as s:
                 error: str | None = None
                 try:
-                    result = dispatch(tool.name, tool.arguments)
+                    result = dispatch(
+                        tool.name,
+                        tool.arguments,
+                        granted=policy.granted,
+                        approver=policy.approver,
+                    )
                 except Exception as exc:  # noqa: BLE001 - surfaced to the agent as a tool result
                     # The agent must see the failure and get a chance to recover;
                     # evals/graders grade that recovery (recovered_from_error).

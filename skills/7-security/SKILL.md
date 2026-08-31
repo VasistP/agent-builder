@@ -92,6 +92,42 @@ This phase builds the controls; `skills/8-adversarial` tests whether they hold.
 Do not treat hardening as verified until the red-team suite has run — an
 untested control is a hypothesis.
 
+
+## Tool posture — declared, enforced, and visible
+
+Every tool must declare a permission; there is no default. The decorator raises
+at import time if one is missing, listing the options, because a tool nobody
+classified would otherwise register as read-only while holding whatever its
+credentials allow.
+
+```bash
+make tools-posture     # every tool: permission, side-effect flag, file:line
+```
+
+Walk that table with the user, tool by tool. The report names the declaration
+site so a wrong answer is a one-line edit, and it flags two mistakes on its own:
+a `delete_*`/`send_*` tool declared READ, and a WRITE/EXTERNAL tool marked
+`side_effect=False` (which would bypass the approval gate).
+
+Both controls are enforced in `dispatch()` — the single chokepoint every tool
+call passes through — not in the graph node, so a call path added later cannot
+bypass them. Order is permission first, then approval: an ungranted tool is
+refused before a human ever sees its arguments, so the approval prompt cannot be
+used as an exfiltration channel.
+
+Grants and the approver come from `RunPolicy`. The default is READ-only with no
+approver, so **an unattended run cannot take an irreversible action**. Eval runs
+use `deny_all` deliberately: if evals auto-approved, an adversarial case
+asserting `no_side_effects` would either pass for the wrong reason or actually
+perform the side effect while red-teaming.
+
+Demonstrate the checkpoint requirement concretely:
+
+```python
+dispatch("<a side-effecting tool>", {...}, granted={Permission.EXTERNAL})
+# ApprovalRequired — the gate fired
+```
+
 ## Checkpoint
 
 Checkpoint block. Verify: trifecta verdict recorded; `make test` green including

@@ -6,7 +6,7 @@ PKG := agent_pkg
         eval obs-up obs-down functions-index smoke context-budget context-rotate \
         arch-snapshot arch-snapshot-commit arch-history route \
         integrations integrations-enable adversarial adversarial-fast \
-        eval-coverage eval-coverage-golden
+        eval-coverage eval-coverage-golden tools-posture
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-20s %s\n", $$1, $$2}'
@@ -61,6 +61,9 @@ route: ## Which model tier should a task use?  make route T="find the parser"
 functions-index: ## Regenerate FUNCTIONS.md from src/ docstrings
 	uv run python tools/functions_index.py --write
 	@git diff --exit-code FUNCTIONS.md >/dev/null || (echo "FUNCTIONS.md updated — review & commit"; true)
+
+tools-posture: ## Show every tool's permission, side-effect flag and where it's declared
+	uv run python -m agent_pkg --tools
 
 eval-coverage: ## Check the eval suite against the golden standard (no tokens)
 	uv run python -m evals.run_evals --check-coverage

@@ -11,31 +11,41 @@ from collections.abc import Iterable
 
 from agent_pkg.agent.graph import step
 from agent_pkg.agent.state import AgentState, Response, ToolEvent
+from agent_pkg.security.policy import RunPolicy
 
 
-def run_once(request: str, *, conversation_id: str | None = None) -> Response:
+def run_once(
+    request: str, *, conversation_id: str | None = None, policy: RunPolicy | None = None
+) -> Response:
     """Handle a single request and return the final response.
 
     Args:
         request: The user's request text.
         conversation_id: Optional id to correlate traces; generated if omitted.
+        policy: Permissions and approver for this run. Defaults to READ-only with
+            no approver, so side-effecting tools are denied.
 
     Returns:
         The agent's `Response` (final text + light trace summary).
     """
     state = AgentState(conversation_id=conversation_id or uuid.uuid4().hex)
     state.add("user", request)
-    state = step(state)
+    state = step(state, policy)
     return _to_response(state)
 
 
-def chat(turns: Iterable[str], *, conversation_id: str | None = None) -> list[Response]:
+def chat(
+    turns: Iterable[str],
+    *,
+    conversation_id: str | None = None,
+    policy: RunPolicy | None = None,
+) -> list[Response]:
     """Run a sequence of user turns in one conversation, returning a Response per turn."""
     state = AgentState(conversation_id=conversation_id or uuid.uuid4().hex)
     out: list[Response] = []
     for turn in turns:
         state.add("user", turn)
-        state = step(state)
+        state = step(state, policy)
         out.append(_to_response(state))
     return out
 

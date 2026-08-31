@@ -27,18 +27,23 @@ Run `make functions-index` after changing any function.
 | `src/agent_pkg/agent/guardrails.py:91` | `def on_tool_call(self, tool_name)` | Record a tool invocation and its outcome; trip on budget or breaker. |
 | `src/agent_pkg/agent/guardrails.py:121` | `def add_cost(self, cost_usd)` | Add model cost to the run and trip if it exceeds the budget. |
 | `src/agent_pkg/agent/guardrails.py:129` | `def _check_clock(self)` | (no docstring) |
-| `src/agent_pkg/agent/model.py:23` | `def complete(prompt)` | Return the model completion for `prompt`, emitting an OTel GenAI span. |
+| `src/agent_pkg/agent/model.py:37` | `def _provider()` | Return the configured provider, validated against PROVIDERS. |
+| `src/agent_pkg/agent/model.py:48` | `def _call_anthropic(model, prompt, system)` | Call Anthropic; return (text, input_tokens, output_tokens). |
+| `src/agent_pkg/agent/model.py:62` | `def _call_openai(model, prompt, system)` | Call an OpenAI-compatible endpoint; return (text, input_tokens, output_tokens). |
+| `src/agent_pkg/agent/model.py:87` | `def _call_ollama(model, prompt, system)` | Call a local Ollama server; return (text, input_tokens, output_tokens). |
+| `src/agent_pkg/agent/model.py:125` | `def complete(prompt)` | Return the model completion for `prompt`, emitting an OTel GenAI span. |
 | `src/agent_pkg/agent/run.py:17` | `def run_once(request)` | Handle a single request and return the final response. |
 | `src/agent_pkg/agent/run.py:37` | `def chat(turns)` | Run a sequence of user turns in one conversation, returning a Response per turn. |
-| `src/agent_pkg/agent/run.py:53` | `def _to_response(state)` | Build a `Response` from the final assistant message and tool history. |
+| `src/agent_pkg/agent/run.py:67` | `def _to_response(state)` | Build a `Response` from the final assistant message and tool history. |
 | `src/agent_pkg/agent/state.py:38` | `def add(self, role, content, tool_name, tool_args, tool_error)` | Append a message to the running transcript. |
 | `src/agent_pkg/data/__init__.py:19` | `def health(self)` | Return True if the store is reachable and ready. |
 | `src/agent_pkg/data/__init__.py:23` | `def query(self, request)` | Execute a read against the store and return raw results. |
-| `src/agent_pkg/observability/exporter.py:21` | `def _trace_dir()` | Return the trace log directory from $TRACE_LOG_DIR, creating it if needed. |
-| `src/agent_pkg/observability/exporter.py:28` | `def _to_wire(rec)` | Convert an in-memory span record to the portable JSON schema. |
-| `src/agent_pkg/observability/exporter.py:55` | `def write_span(rec)` | Append one span record to today's JSONL trace file (thread-safe). |
-| `src/agent_pkg/observability/exporter.py:66` | `def _forward_otlp(wire)` | Best-effort forward to an OTLP endpoint; never raises. |
-| `src/agent_pkg/observability/exporter.py:35` | `def iso(ts)` | Format an epoch timestamp as RFC3339, or None. |
+| `src/agent_pkg/observability/exporter.py:39` | `def _trace_dir()` | Return the trace log directory from $TRACE_LOG_DIR, creating it if needed. |
+| `src/agent_pkg/observability/exporter.py:46` | `def _to_wire(rec)` | Convert an in-memory span record to the portable JSON schema. |
+| `src/agent_pkg/observability/exporter.py:73` | `def write_span(rec)` | Append one span record to today's JSONL trace file (thread-safe). |
+| `src/agent_pkg/observability/exporter.py:94` | `def _tracer()` | Return a configured OTel tracer, or None when OTLP export is off. |
+| `src/agent_pkg/observability/exporter.py:141` | `def _export_otlp(rec, wire)` | Emit one span through the OpenTelemetry SDK, if OTLP export is configured. |
+| `src/agent_pkg/observability/exporter.py:53` | `def iso(ts)` | Format an epoch timestamp as RFC3339, or None. |
 | `src/agent_pkg/observability/redaction.py:19` | `def redact(value)` | Return `value` with known PII patterns masked. |
 | `src/agent_pkg/observability/smoke.py:13` | `def main()` | Write a synthetic three-span trace and print where it landed. |
 | `src/agent_pkg/observability/tracing.py:30` | `def _capture_content()` | Return True if prompt/response bodies may be persisted (observability O6). |

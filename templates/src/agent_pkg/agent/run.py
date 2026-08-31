@@ -7,7 +7,7 @@ and any external caller depend on them.
 from __future__ import annotations
 
 import uuid
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 
 from agent_pkg.agent.graph import step
 from agent_pkg.agent.state import AgentState, Response, ToolEvent
@@ -39,11 +39,25 @@ def chat(
     *,
     conversation_id: str | None = None,
     policy: RunPolicy | None = None,
+    before_turn: Callable[[int], None] | None = None,
 ) -> list[Response]:
-    """Run a sequence of user turns in one conversation, returning a Response per turn."""
+    """Run a sequence of user turns in one conversation, returning a Response per turn.
+
+    Args:
+        turns: The user messages, in order.
+        conversation_id: Optional id to correlate traces; generated if omitted.
+        policy: Permissions and approver for this run.
+        before_turn: Called with the turn index immediately before that turn is
+            sent. This is the hook eval cases use to stage a mid-conversation
+            condition — a tool that starts failing, a poisoned retrieval result.
+            Without it there is no point at which a per-turn fixture could run,
+            because the whole conversation would already be in flight.
+    """
     state = AgentState(conversation_id=conversation_id or uuid.uuid4().hex)
     out: list[Response] = []
-    for turn in turns:
+    for index, turn in enumerate(turns):
+        if before_turn is not None:
+            before_turn(index)
         state.add("user", turn)
         state = step(state, policy)
         out.append(_to_response(state))

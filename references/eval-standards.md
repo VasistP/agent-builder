@@ -102,6 +102,13 @@ Scoring an existing setup: mark each item `pass` / `partial` / `fail` /
 - **Allocate the floor per capability, not just globally.** 20 cases spread over
   8 capabilities is 2-3 each, and a slice that thin cannot fail informatively.
   `--check-coverage` reports per-capability counts and warns below 5 in a slice.
+- **pass^k is a gate, not just a metric.** Any non-adversarial case whose
+  per-case pass rate is below `--min-pass-rate` (default 1.0) fails the build.
+  The aggregate noise band is the wrong instrument for this: one case failing 1
+  of 3 runs barely moves the overall rate, so it hides inside the band
+  indefinitely while being exactly the unreliability the suite exists to catch.
+  `--report-only` skips the gate while authoring; lowering the floor permanently
+  is a Tier C override (`evals.pass_threshold`).
 - **What to trust instead of the headline rate at this size:** the noise band
   `run_evals.py` computes from observed per-case variance across k runs, the
   pass^k / pass@k gap, and *which specific cases* flipped. A named case that

@@ -11,7 +11,8 @@ pass means nothing. So a case declaring `setup` or `inject` with no fixture
 registered is a **hard error**, not a skip — the suite refuses to report a result
 it cannot stand behind.
 
-Register by case id::
+Register by case id for a whole-case ``setup``, or ``"<case-id>#<turn index>"``
+for a turn's ``inject``::
 
     from evals.fixtures import fixture
 
@@ -23,6 +24,15 @@ Register by case id::
 
 Anything before the ``yield`` is setup; anything after is teardown and runs even
 if the case fails. A plain function with no ``yield`` is treated as setup-only.
+
+A turn fixture is entered immediately before its turn and torn down at the end of
+the case, so a condition it stages (a failing tool, a poisoned document) persists
+for the rest of the conversation rather than vanishing after one exchange::
+
+    @fixture("advc-003-tool-error#1")     # before turn index 1
+    def _break_the_search_tool():
+        with patch_tool("search", side_effect=TimeoutError):
+            yield
 """
 
 from __future__ import annotations
@@ -48,13 +58,18 @@ def fixture(case_id: str) -> Callable[[Callable[[], Any]], Callable[[], Any]]:
     return register
 
 
+def turn_key(case_id: str, turn_index: int) -> str:
+    """Return the registry key for one turn's inject fixture."""
+    return f"{case_id}#{turn_index}"
+
+
 def is_registered(case_id: str) -> bool:
     """Return whether a fixture exists for this case id."""
     return case_id in _REGISTRY
 
 
 @contextmanager
-def applied(case: dict, *, what: str = "setup") -> Iterator[None]:
+def applied(case: dict, *, what: str = "setup", key: str | None = None) -> Iterator[None]:
     """Run the case's registered fixture around the case body.
 
     Raises:
@@ -62,16 +77,15 @@ def applied(case: dict, *, what: str = "setup") -> Iterator[None]:
             registered for it. Failing loudly is the point — a silent skip turns
             an unperformed attack into a passing case.
     """
-    case_id = case["id"]
-    if not is_registered(case_id):
+    reg_key = key or case["id"]
+    if not is_registered(reg_key):
         raise MissingFixtureError(
-            f'case {case_id!r} declares "{what}": {case.get(what)!r}\n'
-            f"  but no fixture is registered for it, so the {what} never happens and\n"
-            f"  the case would pass without testing anything. Register one in\n"
-            f"  evals/fixtures.py with @fixture({case_id!r}), or remove the "
-            f'"{what}" key.'
+            f'case {case["id"]!r} declares "{what}" but no fixture is registered\n'
+            f"  under {reg_key!r}, so the {what} never happens and the case would\n"
+            f"  pass without testing anything. Register one in evals/fixtures.py\n"
+            f'  with @fixture({reg_key!r}), or remove the "{what}" key.'
         )
-    fn = _REGISTRY[case_id]
+    fn = _REGISTRY[reg_key]
     result = fn()
     if isinstance(result, Generator):
         next(result)

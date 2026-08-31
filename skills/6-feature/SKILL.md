@@ -77,8 +77,10 @@ Reply `approved` to merge, or tell me what to change.
     - Append to `docs/TODO.md`: completed items, what is next. If the plan
       changed, append the supersession naming the superseded item and the reason
       — never rewrite the old entry.
-    - If the architecture changed materially: `make arch-snapshot` (commits the
-      current version so it keeps its own commit), then rewrite
+    - If the architecture changed materially: `make arch-snapshot` (**checks**
+      the current version is committed; it does not commit anything). If it
+      refuses, run `make arch-snapshot-commit` — that commits and never
+      pushes — so the old state keeps its own commit. Then rewrite
       `docs/ARCHITECTURE.md` to describe the new current state. Do not append
       history to it.
     - `make context-budget`; run `make context-rotate` if anything is over.

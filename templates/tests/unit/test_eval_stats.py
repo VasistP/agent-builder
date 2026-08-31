@@ -45,9 +45,17 @@ def test_summary_uses_pass_rate_not_single_sample() -> None:
     assert _summarize(recs)["overall"] == 0.75
 
 
-def test_noise_band_is_zero_when_fully_consistent() -> None:
+def test_noise_band_is_not_zero_when_every_run_passed() -> None:
+    """Three passes are three samples, not proof of determinism.
+
+    This test previously asserted the band was exactly 0.0 here, encoding the
+    plug-in estimator's artifact as intended behavior: p(1-p)/k is 0 when p=1, so
+    an all-passing suite got a zero-width band and the next ordinary wobble was
+    reported as a regression. A case that passes 3/3 is entirely consistent with
+    one that fails 20% of the time, and the band should say so.
+    """
     recs = [_record(CASE, "single", [_checks(True)] * 3)]
-    assert _noise_band(recs) == 0.0
+    assert _noise_band(recs) > 0.0
 
 
 def test_noise_band_grows_with_flakiness() -> None:
@@ -96,3 +104,24 @@ def pytest_approx(value: float, tol: float = 1e-3) -> float:
             return abs(float(other) - value) < tol  # type: ignore[arg-type]
 
     return _Approx(value)
+
+
+def test_noise_band_is_nonzero_for_all_passing_cases() -> None:
+    """3/3 is not proof of zero variance — it is three samples.
+
+    The plug-in estimator p(1-p)/k returns exactly 0 for a case that passed every
+    run, so a suite of all-passing cases got a zero-width noise band and any
+    subsequent wobble was reported as a regression. The Jeffreys-smoothed
+    estimate keeps the band honest at small k.
+    """
+    records = [
+        {"id": f"c{i}", "pass_rate": 1.0, "runs": 3, "passed": True, "tags": {}} for i in range(10)
+    ]
+    assert _noise_band(records) > 0
+
+
+def test_noise_band_narrows_as_runs_increase() -> None:
+    """More evidence per case should mean a tighter band, not a wider one."""
+    few = [{"id": "c", "pass_rate": 1.0, "runs": 3, "passed": True, "tags": {}}]
+    many = [{"id": "c", "pass_rate": 1.0, "runs": 30, "passed": True, "tags": {}}]
+    assert _noise_band(many) < _noise_band(few)

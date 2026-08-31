@@ -264,13 +264,14 @@ says plainly that you never lower a floor to turn a red build green.
 
 ## The template in `templates/`
 
-**The template is Python + LangGraph + Anthropic by default, and that default
-is wired deeper than one config line.** The eval preflight, model shim and
-`.env` keys are provider-aware (`AGENT_MODEL_PROVIDER` selects which key is
-required, and `ollama`/`local` needs no key at all), but porting to TypeScript
-or another framework means rewriting `tools/`, the Makefile and the graders —
-budget real work for it, not a paragraph. The *methodology* is portable; the
-scaffold is not yet.
+**Provider is a config choice; language and framework are not.**
+`AGENT_MODEL_PROVIDER` selects the credential required, the client used and the
+default model across `anthropic`, `openai`, `azure`, `google`, and `ollama` /
+`local` — the local options need no API key, and the eval preflight agrees with
+the model adapter. But the scaffold is Python + LangGraph: porting to TypeScript
+or another framework means rewriting `tools/`, the Makefile and the graders.
+Budget real work for that, not a paragraph. The *methodology* is portable; the
+scaffold is not.
 
 Python 3.12 + LangGraph skeleton with: OTel-GenAI instrumentation + JSON export +
 a from-scratch Streamlit dashboard, an eval runner (`single_response.jsonl` /

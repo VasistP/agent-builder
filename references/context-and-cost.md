@@ -41,10 +41,12 @@ state from a pile of history — expensive and error-prone, exactly the waste we
 are eliminating. So the file holds only the present, and history lives where
 history belongs: git.
 
-`make arch-snapshot` enforces the discipline by refusing to proceed while the
-file has uncommitted changes, guaranteeing each version gets its own commit.
-It **commits but never pushes** — pushing is outward-facing and can fail (no
-remote, protected branch, detached HEAD) or surprise the user mid-task.
+Two targets, and the split is deliberate. `make arch-snapshot` **only checks**:
+it refuses to proceed while the file has uncommitted changes, guaranteeing each
+version gets its own commit. `make arch-snapshot-commit` is the one that
+**commits, and never pushes** — pushing is outward-facing and can fail (no
+remote, protected branch, detached HEAD) or surprise the user mid-task. Nothing
+here creates a commit unless you run the target whose name says so.
 
 `git log -p docs/ARCHITECTURE.md` is the full history.
 

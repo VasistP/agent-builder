@@ -32,13 +32,13 @@ import sys
 import time
 from collections import defaultdict
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
 
-from evals.fixtures import MissingFixtureError, applied, is_registered
+from evals.fixtures import MissingFixtureError, applied, is_registered, turn_key
 from evals.graders import run_grader
 from evals.judge import judge
 
@@ -237,9 +237,11 @@ def _unperformable(cases: list[dict]) -> list[str]:
     """
     bad = []
     for case in cases:
-        declares = bool(case.get("setup")) or any(t.get("inject") for t in case.get("turns", []))
-        if declares and not is_registered(case["id"]):
-            bad.append(case["id"])
+        if case.get("setup") and not is_registered(case["id"]):
+            bad.append(f"{case['id']} (setup)")
+        for i, turn in enumerate(case.get("turns", [])):
+            if turn.get("inject") and not is_registered(turn_key(case["id"], i)):
+                bad.append(f"{turn_key(case['id'], i)} (inject on turn {i})")
     return bad
 
 
@@ -297,8 +299,28 @@ def _one_conversation(case: dict, run_index: int, chat: Callable) -> list[dict]:
     turns = [t["user"] for t in case["turns"]]
     start = time.time()
     try:
-        with _maybe_setup(case):
-            responses = chat(turns, conversation_id=f"{case['id']}-r{run_index}")
+        with _maybe_setup(case), ExitStack() as stack:
+
+            def before_turn(index: int, _stack: ExitStack = stack) -> None:
+                """Stage this turn's `inject` condition before the turn is sent.
+
+                Entered on the stack rather than as a scoped block so a staged
+                condition (a tool that now fails, a poisoned document) persists
+                for the rest of the conversation and is torn down at case end —
+                a mid-conversation failure that healed after one turn would not
+                test recovery at all.
+                """
+                turn = case["turns"][index]
+                if turn.get("inject"):
+                    _stack.enter_context(
+                        applied(case, what="inject", key=turn_key(case["id"], index))
+                    )
+
+            responses = chat(
+                turns,
+                conversation_id=f"{case['id']}-r{run_index}",
+                before_turn=before_turn,
+            )
     except MissingFixtureError:
         raise
     except Exception as exc:  # noqa: BLE001 - recorded as a failed run
@@ -335,18 +357,26 @@ def _summarize(records: list[dict]) -> dict:
 def _noise_band(records: list[dict]) -> float:
     """Estimate how much the overall pass rate moves from run-to-run variance.
 
-    Per-case variance across k runs of a Bernoulli trial is p(1-p)/k. Averaging
-    over n cases divides that by n; the band is ~2 standard errors. A delta
-    inside this band is not evidence of a regression, and reporting it as one
-    trains people to ignore the gate.
+    Per-case variance for a Bernoulli trial is p(1-p)/k, but the *observed* p is
+    itself an estimate from k runs, and at k=3 the plug-in estimator says a case
+    that passed 3/3 has zero variance. That is an artifact of the sample, not a
+    property of the agent: three passes are entirely consistent with a case that
+    fails 20% of the time. Reporting zero uncertainty there makes the band too
+    narrow and turns ordinary sampling noise into reported regressions.
+
+    So the estimate is smoothed with a Jeffreys (Beta(1/2, 1/2)) prior:
+    p_hat = (successes + 1/2) / (k + 1). A 3/3 case gets p_hat = 0.875 and a
+    non-zero variance, which is the honest statement — "probably reliable, on
+    three samples we cannot say more".
     """
     if not records:
         return 0.0
     variances = []
     for r in records:
-        p = r.get("pass_rate", float(r["passed"]))
         k = max(r.get("runs", 1), 1)
-        variances.append(p * (1 - p) / k)
+        successes = r.get("pass_rate", float(r["passed"])) * k
+        p_hat = (successes + 0.5) / (k + 1)
+        variances.append(p_hat * (1 - p_hat) / (k + 1))
     return round(2 * (sum(variances) / (len(records) ** 2)) ** 0.5, 3)
 
 
@@ -583,6 +613,17 @@ def main() -> int:
         help="run despite a suite under the coverage floor (local authoring only)",
     )
     parser.add_argument(
+        "--min-pass-rate",
+        type=float,
+        default=float(os.getenv("EVAL_MIN_PASS_RATE", "1.0")),
+        help="per-case pass^k floor for non-adversarial cases (default 1.0)",
+    )
+    parser.add_argument(
+        "--report-only",
+        action="store_true",
+        help="print results without applying the pass^k gate (authoring loop)",
+    )
+    parser.add_argument(
         "--stage",
         choices=["tier1", "golden"],
         help="coverage stage to enforce (default: golden once a red-team case exists)",
@@ -748,6 +789,36 @@ def main() -> int:
         print("\n  REGRESSION (beyond noise):")
         for tag, delta in regressions:
             print(f"    {tag} {delta:+.1%}")
+        return 1
+
+    # pass^k as an actual gate, not just a reported metric. The aggregate noise
+    # band is the wrong instrument for this: a single case failing 1 of 3 runs
+    # barely moves the overall rate, so it hides inside the band forever while
+    # being exactly the unreliability the framework says it measures.
+    below = [
+        r
+        for r in records
+        if not r.get("adversarial") and r.get("pass_rate", 1.0) < args.min_pass_rate
+    ]
+    if below and not args.report_only:
+        flaky = [r for r in below if r.get("pass_rate", 0.0) > 0]
+        failing = [r for r in below if r.get("pass_rate", 0.0) == 0]
+        print(f"\n  BELOW pass^k GATE (min per-case pass rate {args.min_pass_rate:.0%}):")
+        for r in failing:
+            print(f"    {r['id']:<34} failed every run")
+        for r in flaky:
+            print(f"    {r['id']:<34} passed {r['pass_rate']:.0%} of {r['runs']} runs — flaky")
+        if flaky:
+            print(
+                "  A case that only sometimes passes is not passing. Fix the cause or,\n"
+                "  if the behavior is genuinely probabilistic, make the assertion match\n"
+                "  what you actually require."
+            )
+        print(
+            "  --report-only runs the suite without this gate while authoring.\n"
+            "  Lowering --min-pass-rate permanently is a Tier C override "
+            "(evals.pass_threshold)."
+        )
         return 1
     return 0
 

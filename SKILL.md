@@ -85,7 +85,9 @@ consent. Read `.agentbuilder/overrides.md` at the start of every run.
 | **targeted** | "just evals" / "just security" / "red-team it" | that sub-skill only, against the existing repo — never re-scaffold, never touch agent logic |
 | **audit** | "review our existing setup" | sub-skill(s) in `audit` path: score against the matching `*-standards.md`, output prioritized gaps + effort |
 
-Resume from `.agentbuilder/progress.md` if present.
+Resume from `.agentbuilder/progress.md` if present. If the user is unsure where
+they are or what to do next, run `skills/help` — it reads the project's real
+state and returns one concrete next step.
 
 ## Phases
 

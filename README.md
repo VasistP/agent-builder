@@ -59,6 +59,7 @@ ceremony, and what is explicitly out of scope.
 |------|---------|
 | `SKILL.md` | orchestrator: modes, non-negotiables, checkpoint protocol |
 | `skills/0-discovery` … `skills/8-adversarial` | the phase sub-skills, each independently invocable (`build` / `add` / `audit`) |
+| `skills/help` | **stuck? what do I do next** — reads the project's real artifacts and returns one concrete next step with copy-pasteable instructions, never a menu |
 | `skills/capabilities` | what the framework can do and what you can invoke — see [CAPABILITIES.md](CAPABILITIES.md), generated from live repo state |
 | `skills/override` | the **only** way to change any default — assesses the specific repo, warns, offers alternatives, records a ledger |
 | `references/interview-protocol.md` | which phases interview vs. propose, how to ask, the consensus check, and how a phase gets unlocked |

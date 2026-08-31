@@ -36,6 +36,7 @@ markdown: **read the file directly.**
 | You want to | Read |
 |-------------|------|
 | know what's available | `CAPABILITIES.md` |
+| not know what to do next on a project | `skills/help/SKILL.md` + `tools/next_step.py` |
 | run the whole pipeline | `SKILL.md`, then `skills/<phase>/SKILL.md` in order |
 | do one thing (evals, observability, security) | that phase's `SKILL.md`, `targeted` entry path |
 | review an existing agent | that phase's `SKILL.md`, `audit` entry path |

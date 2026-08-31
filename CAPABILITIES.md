@@ -37,6 +37,7 @@ codebase — you do not have to have used this framework to build it.
 | Skill | What it does |
 |-------|--------------|
 | `capabilities` | Show everything agent-builder can do — every phase, which ones can be called standalone or pointed at an existing codebase, the C… |
+| `help` | Tell the user exactly what to do next on their agent-builder project, based on what they have already built and what is still ahe… |
 | `override` | The ONLY way to change any default, structure, or configuration defined by agent-builder — including the evals and observability … |
 
 ## Tools in every scaffolded project
